@@ -32,6 +32,22 @@ describe('path admission', () => {
     }
   });
 
+  // Found by running against a real project: its ignored .local/ held tokens
+  // and *.secret files that no extension rule covered.
+  test('refuses the secret shapes a real repo actually uses', () => {
+    for (const bad of ['.dev.vars', '.dev.vars.stripe', '.local/clerk-webhook-staging.secret',
+                       '.local/local-owner-api.token', 'config/aws-credentials.json',
+                       'deploy/prod.secret', 'x.credentials']) {
+      assert.equal(denyPath(bad), 'denied', bad);
+    }
+  });
+
+  test('does not over-deny ordinary files that merely mention a secret', () => {
+    for (const ok of ['src/secrets-guide.md', 'docs/tokenizer.ts', 'src/credentialStore.ts']) {
+      assert.equal(denyPath(ok), null, ok);
+    }
+  });
+
   test('marks binary extensions separately from denial', () => {
     assert.equal(denyPath('assets/logo.png'), 'binary');
     assert.equal(denyPath('fonts/x.woff2'), 'binary');
@@ -403,5 +419,33 @@ describe('triage against a fake provider', () => {
     assert.equal(doc.files[0].reach, null);
     assert.equal(doc.coverage.filesUnevaluated, 1);
     assert.equal(doc.usage.failures[0].reason, 'bad_probability');
+  });
+});
+
+// Regression: the first live run classified this project's own source as binary,
+// because an escape sequence in a regex was written to disk as a raw control byte.
+// A source file carrying raw control bytes is invisible to its own triage.
+describe('own sources', () => {
+  test('carry no raw control bytes', async () => {
+    const { readdir, readFile } = await import('node:fs/promises');
+    const root = new URL('..', import.meta.url).pathname;
+    const suspect = [];
+    async function walk(dir) {
+      for (const item of await readdir(dir, { withFileTypes: true })) {
+        if (item.name === '.git' || item.name === 'node_modules') continue;
+        const path = join(dir, item.name);
+        if (item.isDirectory()) { await walk(path); continue; }
+        if (!/\.(mjs|js|json|md|ya?ml)$/.test(item.name)) continue;
+        const buf = await readFile(path);
+        for (const byte of buf) {
+          if (byte < 9 || byte === 11 || byte === 12 || (byte > 13 && byte < 32) || byte === 127) {
+            suspect.push(path);
+            break;
+          }
+        }
+      }
+    }
+    await walk(root);
+    assert.deepEqual(suspect, [], 'write control characters as escape text, not as bytes');
   });
 });
