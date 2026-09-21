@@ -1,6 +1,6 @@
 # jev-flowmap
 
-**v0.1.0 · thresholds uncalibrated · not yet evaluated against a labeled corpus**
+**v0.1.1 · thresholds uncalibrated · not yet evaluated against a labeled corpus**
 
 A Claude Code plugin that maps the user flows of a repository by reading its source.
 Jev screens which files carry user-reachable behavior and verifies each claimed step
