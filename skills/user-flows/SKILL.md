@@ -38,7 +38,12 @@ for verification.
 node ${CLAUDE_PLUGIN_ROOT}/skills/user-flows/scripts/flowmap.mjs triage <repo-root>
 ```
 
-Writes `.flows/triage.json`. One cheap Noul per file decides which files carry
+Writes `.flows/triage.json`. Gitignored files are skipped automatically, including
+via nested `.gitignore` files. Vendored trees that git *does* track, such as
+third-party templates or example apps, need `--exclude 'vendor/,templates/'`, using
+gitignore syntax. If the included list is dominated by code that is not this
+project's own surface, that is what `--exclude` is for; do not lower the threshold
+to compensate. One cheap Noul per file decides which files carry
 user-reachable behavior. Read the result and tell the user three numbers before
 going further: how many files were included, how many were omitted below threshold,
 and the estimated cost so far.

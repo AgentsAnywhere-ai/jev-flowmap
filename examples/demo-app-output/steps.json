@@ -1,0 +1,181 @@
+{
+  "goal": "Map the user flows the demo-app repository supports.",
+  "flows": [
+    {
+      "id": "signup",
+      "title": "Create an account and land on the account screen",
+      "surface": "browser_ui",
+      "entryPoint": { "path": "src/web/signup.js", "startLine": 2, "endLine": 10 },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "signed-out visitor",
+          "action": "open the signup screen and see an email form",
+          "precondition": "no session cookie",
+          "effect": "a form with an email field and a submit button is rendered",
+          "evidence": [{ "path": "src/web/signup.js", "startLine": 1, "endLine": 10 }]
+        },
+        {
+          "index": 1,
+          "actor": "signed-out visitor",
+          "action": "submit the email address",
+          "precondition": "the signup form is rendered",
+          "effect": "a POST to /api/signup is sent with the email",
+          "evidence": [{ "path": "src/web/signup.js", "startLine": 11, "endLine": 15 }]
+        },
+        {
+          "index": 2,
+          "actor": "the API",
+          "action": "reject an email with no @ before creating anything",
+          "precondition": "a signup request arrived",
+          "effect": "a 400 invalid_email response, and the screen shows a retry message",
+          "evidence": [
+            { "path": "src/server.js", "startLine": 6, "endLine": 9 },
+            { "path": "src/web/signup.js", "startLine": 16, "endLine": 21 }
+          ]
+        },
+        {
+          "index": 3,
+          "actor": "the API",
+          "action": "create the account and set a session cookie",
+          "precondition": "the email passed validation",
+          "effect": "a 201 with the new id, and a session cookie on the response",
+          "evidence": [{ "path": "src/server.js", "startLine": 6, "endLine": 13 }]
+        },
+        {
+          "index": 4,
+          "actor": "signed-out visitor",
+          "action": "be redirected to the account screen",
+          "precondition": "signup returned a success response",
+          "effect": "the browser navigates to /account",
+          "evidence": [{ "path": "src/web/signup.js", "startLine": 16, "endLine": 23 }]
+        }
+      ]
+    },
+    {
+      "id": "account",
+      "title": "View the account and delete it",
+      "surface": "browser_ui",
+      "entryPoint": { "path": "src/web/account.js", "startLine": 2, "endLine": 21 },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "signed-in person",
+          "action": "load the account screen, which fetches the account",
+          "precondition": "arrived at /account",
+          "effect": "a GET to /api/account is sent with the session cookie",
+          "evidence": [{ "path": "src/web/account.js", "startLine": 1, "endLine": 5 }]
+        },
+        {
+          "index": 1,
+          "actor": "the API",
+          "action": "check the session before returning the account",
+          "precondition": "an account request arrived",
+          "effect": "a 401 when the session is missing or expired, otherwise the account",
+          "evidence": [
+            { "path": "src/server.js", "startLine": 15, "endLine": 19 },
+            { "path": "src/session.js", "startLine": 1, "endLine": 10 }
+          ]
+        },
+        {
+          "index": 2,
+          "actor": "person with an expired session",
+          "action": "land on a blank account screen",
+          "precondition": "the account request returned 401",
+          "effect": "the page is emptied and nothing further is rendered",
+          "evidence": [{ "path": "src/web/account.js", "startLine": 6, "endLine": 10 }]
+        },
+        {
+          "index": 3,
+          "actor": "signed-in person",
+          "action": "delete the account",
+          "precondition": "the account screen rendered with a delete button",
+          "effect": "a DELETE to /api/account removes the record, then the browser navigates to /",
+          "evidence": [
+            { "path": "src/web/account.js", "startLine": 11, "endLine": 21 },
+            { "path": "src/server.js", "startLine": 21, "endLine": 26 }
+          ]
+        },
+        {
+          "index": 4,
+          "actor": "signed-in person",
+          "action": "confirm the deletion in a confirmation dialog",
+          "precondition": "the delete button was clicked",
+          "effect": "the deletion proceeds only after an explicit confirmation",
+          "notes": "Deliberately included in this example although no such dialog exists, so the output shows what a claim the source does not support looks like.",
+          "evidence": [{ "path": "src/web/account.js", "startLine": 11, "endLine": 21 }]
+        }
+      ]
+    },
+    {
+      "id": "api-signup",
+      "title": "Create an account over the HTTP API",
+      "surface": "http_api",
+      "entryPoint": { "path": "src/server.js", "startLine": 5, "endLine": 14 },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "a developer's own program",
+          "action": "POST an email to /api/signup against the documented contract",
+          "precondition": "holds no session",
+          "effect": "a 201 with the new account id and a session cookie, or a 400 invalid_email",
+          "evidence": [{ "path": "src/server.js", "startLine": 1, "endLine": 14 }]
+        },
+        {
+          "index": 1,
+          "actor": "a developer's own program",
+          "action": "GET /api/account with the returned session cookie",
+          "precondition": "holds the session cookie from signup",
+          "effect": "the account JSON, or a 401 when the session is missing or expired",
+          "evidence": [
+            { "path": "src/server.js", "startLine": 15, "endLine": 19 },
+            { "path": "src/session.js", "startLine": 1, "endLine": 10 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "agent-tool",
+      "title": "Create an account as a discovered agent tool",
+      "surface": "agent_tool",
+      "entryPoint": { "path": "src/tools.js", "startLine": 5, "endLine": 14 },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "an assistant",
+          "action": "list the available tools and read demo_create_account's schema",
+          "precondition": "connected to the tool surface",
+          "effect": "the tool name, description and input schema are returned without the handler",
+          "evidence": [{ "path": "src/tools.js", "startLine": 1, "endLine": 14 }]
+        },
+        {
+          "index": 1,
+          "actor": "an assistant",
+          "action": "call demo_create_account with an email",
+          "precondition": "the tool schema was read",
+          "effect": "the call is routed to the same POST /api/signup handler the API uses",
+          "evidence": [
+            { "path": "src/tools.js", "startLine": 5, "endLine": 12 },
+            { "path": "src/server.js", "startLine": 5, "endLine": 14 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cli-invite",
+      "title": "Invite someone from the terminal",
+      "surface": "cli",
+      "entryPoint": { "path": "src/cli.js", "startLine": 1, "endLine": 15 },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "an operator at a terminal",
+          "action": "run the invite command with an email argument",
+          "precondition": "has shell access to the project",
+          "effect": "an invite record is stored, or a usage message and a non-zero exit when the email is missing",
+          "evidence": [{ "path": "src/cli.js", "startLine": 1, "endLine": 15 }]
+        }
+      ]
+    }
+  ]
+}

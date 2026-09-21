@@ -1,0 +1,403 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-21T15:35:11.355Z",
+  "model": "jev-1.13.0",
+  "policyVersion": "user-flows-v1+643c063eb620",
+  "verdicts": {
+    "signup:2": {
+      "judgments": {
+        "supported": 0.95,
+        "reachable": 0.92,
+        "guarded": 0.68,
+        "terminal_failure": 0.03,
+        "destructive": 0.04
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/server.js",
+          "startLine": 6,
+          "endLine": 9,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        },
+        {
+          "path": "src/web/signup.js",
+          "startLine": 16,
+          "endLine": 21,
+          "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+        }
+      ]
+    },
+    "api-signup:1": {
+      "judgments": {
+        "supported": 0.96,
+        "reachable": 0.89,
+        "guarded": 0.97,
+        "terminal_failure": 0.06,
+        "destructive": 0.03
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/server.js",
+          "startLine": 15,
+          "endLine": 19,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        },
+        {
+          "path": "src/session.js",
+          "startLine": 1,
+          "endLine": 10,
+          "sha256": "135f0d7a8f71a0e7ec4f9cb721522787d9b96fb977b10c341f78857b4f56ab4b"
+        }
+      ]
+    },
+    "cli-invite:0": {
+      "judgments": {
+        "supported": 0.96,
+        "reachable": 0.58,
+        "guarded": 0.52,
+        "terminal_failure": 0.05,
+        "destructive": 0.04
+      },
+      "label": "verified",
+      "edge": "uncertain",
+      "escalate": [
+        "reachable"
+      ],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/cli.js",
+          "startLine": 1,
+          "endLine": 15,
+          "sha256": "2b986d36fbf9e56f3dc0083d1c98dfe4596d477bdec2cd809f52352da4908e39"
+        }
+      ]
+    },
+    "signup:0": {
+      "judgments": {
+        "supported": 0.67,
+        "reachable": 0.68,
+        "guarded": 0.16,
+        "terminal_failure": 0.04,
+        "destructive": 0.03
+      },
+      "label": "unverified",
+      "edge": "uncertain",
+      "escalate": [
+        "supported",
+        "reachable"
+      ],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/signup.js",
+          "startLine": 1,
+          "endLine": 10,
+          "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+        }
+      ]
+    },
+    "account:4": {
+      "judgments": {
+        "supported": 0.02,
+        "reachable": 0.05,
+        "guarded": 0.1,
+        "terminal_failure": 0.06,
+        "destructive": 0.27
+      },
+      "label": "contradicted",
+      "edge": "gap",
+      "escalate": [],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/account.js",
+          "startLine": 11,
+          "endLine": 21,
+          "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+        }
+      ]
+    },
+    "signup:1": {
+      "judgments": {
+        "supported": 0.9,
+        "reachable": 0.87,
+        "guarded": 0.08,
+        "terminal_failure": 0.05,
+        "destructive": 0.27
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/signup.js",
+          "startLine": 11,
+          "endLine": 15,
+          "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+        }
+      ]
+    },
+    "account:2": {
+      "judgments": {
+        "supported": 0.86,
+        "reachable": 0.91,
+        "guarded": 0.86,
+        "terminal_failure": 0.96,
+        "destructive": 0.03
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": true,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/account.js",
+          "startLine": 6,
+          "endLine": 10,
+          "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+        }
+      ]
+    },
+    "agent-tool:1": {
+      "judgments": {
+        "supported": 0.9,
+        "reachable": 0.94,
+        "guarded": 0.78,
+        "terminal_failure": 0.05,
+        "destructive": 0.08
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/tools.js",
+          "startLine": 5,
+          "endLine": 12,
+          "sha256": "c5c4fe00c4bf66a38b8bf1e373fa09c422edbabf0b1609d01847078236b6f33d"
+        },
+        {
+          "path": "src/server.js",
+          "startLine": 5,
+          "endLine": 14,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        }
+      ]
+    },
+    "agent-tool:0": {
+      "judgments": {
+        "supported": 0.79,
+        "reachable": 0.79,
+        "guarded": 0.05,
+        "terminal_failure": 0.03,
+        "destructive": 0.04
+      },
+      "label": "unverified",
+      "edge": "keep",
+      "escalate": [
+        "supported"
+      ],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/tools.js",
+          "startLine": 1,
+          "endLine": 14,
+          "sha256": "c5c4fe00c4bf66a38b8bf1e373fa09c422edbabf0b1609d01847078236b6f33d"
+        }
+      ]
+    },
+    "api-signup:0": {
+      "judgments": {
+        "supported": 0.91,
+        "reachable": 0.43,
+        "guarded": 0.9,
+        "terminal_failure": 0.05,
+        "destructive": 0.1
+      },
+      "label": "verified",
+      "edge": "uncertain",
+      "escalate": [
+        "reachable"
+      ],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/server.js",
+          "startLine": 1,
+          "endLine": 14,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        }
+      ]
+    },
+    "account:3": {
+      "judgments": {
+        "supported": 0.96,
+        "reachable": 0.07,
+        "guarded": 0.93,
+        "terminal_failure": 0.2,
+        "destructive": 0.98
+      },
+      "label": "verified",
+      "edge": "gap",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": true,
+      "evidence": [
+        {
+          "path": "src/web/account.js",
+          "startLine": 11,
+          "endLine": 21,
+          "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+        },
+        {
+          "path": "src/server.js",
+          "startLine": 21,
+          "endLine": 26,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        }
+      ]
+    },
+    "account:0": {
+      "judgments": {
+        "supported": 0.86,
+        "reachable": 0.43,
+        "guarded": 0.53,
+        "terminal_failure": 0.75,
+        "destructive": 0.05
+      },
+      "label": "verified",
+      "edge": "uncertain",
+      "escalate": [
+        "reachable"
+      ],
+      "guarded": false,
+      "deadEnd": true,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/account.js",
+          "startLine": 1,
+          "endLine": 5,
+          "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+        }
+      ]
+    },
+    "signup:4": {
+      "judgments": {
+        "supported": 0.92,
+        "reachable": 0.74,
+        "guarded": 0.55,
+        "terminal_failure": 0.06,
+        "destructive": 0.03
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": false,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/web/signup.js",
+          "startLine": 16,
+          "endLine": 23,
+          "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+        }
+      ]
+    },
+    "signup:3": {
+      "judgments": {
+        "supported": 0.96,
+        "reachable": 0.34,
+        "guarded": 0.87,
+        "terminal_failure": 0.05,
+        "destructive": 0.04
+      },
+      "label": "verified",
+      "edge": "uncertain",
+      "escalate": [
+        "reachable"
+      ],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/server.js",
+          "startLine": 6,
+          "endLine": 13,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        }
+      ]
+    },
+    "account:1": {
+      "judgments": {
+        "supported": 0.96,
+        "reachable": 0.92,
+        "guarded": 0.92,
+        "terminal_failure": 0.1,
+        "destructive": 0.04
+      },
+      "label": "verified",
+      "edge": "keep",
+      "escalate": [],
+      "guarded": true,
+      "deadEnd": false,
+      "destructive": false,
+      "evidence": [
+        {
+          "path": "src/server.js",
+          "startLine": 15,
+          "endLine": 19,
+          "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+        },
+        {
+          "path": "src/session.js",
+          "startLine": 1,
+          "endLine": 10,
+          "sha256": "135f0d7a8f71a0e7ec4f9cb721522787d9b96fb977b10c341f78857b4f56ab4b"
+        }
+      ]
+    }
+  },
+  "usage": {
+    "requests": 15,
+    "inputTokens": 20942,
+    "outputTokens": 1335,
+    "failures": [],
+    "estimatedCostUsd": 0.00088
+  }
+}

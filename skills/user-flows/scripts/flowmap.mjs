@@ -25,7 +25,7 @@ export const policyVersion = (q) => `${q.version}+${q.sourceSha256.slice(0, 12)}
 
 // ---------------------------------------------------------------- admission
 
-const DENY_SEGMENT = /^(\.git|node_modules|dist|build|out|coverage|\.next|\.nuxt|\.wrangler|\.turbo|vendor|__pycache__|\.venv)$/i;
+const DENY_SEGMENT = /^(\.git|node_modules|dist|build|out|coverage|\.next|\.nuxt|\.open-next|\.svelte-kit|\.output|\.cache|\.parcel-cache|\.wrangler|\.turbo|vendor|__pycache__|\.venv)$/i;
 const DENY_FILE = /(^\.env(\.|$)|^\.dev\.vars|\.(pem|key|p12|pfx|crt|keystore|secret|token|credentials)$|[-_.](secret|token|credentials)s?\.[a-z]+$|\.min\.(js|css)$|^(package|pnpm|yarn|bun)[-.]lock(\.(json|yaml))?$|^poetry\.lock$|^Cargo\.lock$)/i;
 const BINARY_EXT = /\.(png|jpe?g|gif|webp|avif|ico|icns|bmp|tiff?|svgz|pdf|zip|gz|tgz|bz2|xz|7z|rar|mp[34]|m4a|wav|ogg|mov|mp4|avi|webm|woff2?|ttf|otf|eot|so|dylib|dll|exe|bin|wasm|class|jar|db|sqlite3?|parquet|ds_store)$/i;
 
@@ -42,6 +42,50 @@ export function denyPath(rel) {
   if (DENY_SEGMENT.test(name) || DENY_FILE.test(name)) return 'denied';
   if (BINARY_EXT.test(name)) return 'binary';
   return null;
+}
+
+const escapeRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * A deliberate subset of gitignore: comments, blank lines, `dir/`, `*.ext`,
+ * `name`, and rooted `/name` paths. Negations are recorded as unsupported
+ * rather than silently half-applied, because a half-applied negation would
+ * read a file the project asked us not to read.
+ */
+export function compileIgnore(text) {
+  const rules = [];
+  const unsupported = [];
+  for (const raw of String(text).split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    if (line.startsWith('!')) { unsupported.push(line); continue; }
+    const dirOnly = line.endsWith('/');
+    let pattern = line.replace(/\/+$/, '');
+    const rooted = pattern.startsWith('/');
+    if (rooted) pattern = pattern.slice(1);
+    if (!pattern) continue;
+    const regex = new RegExp('^' + pattern.split('*').map(escapeRe).join('[^/]*') + '$');
+    rules.push({ regex, dirOnly, scoped: rooted || pattern.includes('/') });
+  }
+  return { rules, unsupported };
+}
+
+export function ignored(matcher, rel, isDir = false) {
+  if (!matcher) return false;
+  const segments = rel.split('/');
+  for (const rule of matcher.rules) {
+    if (rule.scoped) {
+      if (rule.regex.test(rel) && (!rule.dirOnly || isDir)) return true;
+      if (rule.dirOnly && segments.slice(0, -1).some((_, i) => rule.regex.test(segments.slice(0, i + 1).join('/')))) return true;
+      continue;
+    }
+    if (rule.dirOnly) {
+      if (segments.slice(0, isDir ? undefined : -1).some((s) => rule.regex.test(s))) return true;
+      continue;
+    }
+    if (segments.some((s) => rule.regex.test(s))) return true;
+  }
+  return false;
 }
 
 /** A NUL byte in the first 8 KiB is the practical test; extensions lie. */
@@ -162,12 +206,13 @@ export const estimateCostUsd = (inputTokens) => Number((inputTokens * USD_PER_IN
 export function checkCoverage(coverage) {
   const problems = [];
   const { filesEnumerated, filesDenied, filesBinary, filesScreened, filesIncluded, omissions } = coverage;
-  if (filesEnumerated !== filesScreened + filesDenied + filesBinary) problems.push('enumerated != screened + denied + binary');
+  const skipped = filesDenied + filesBinary + (coverage.filesTooLarge ?? 0) + (coverage.filesGitignored ?? 0) + (coverage.filesExcluded ?? 0);
+  if (filesEnumerated !== filesScreened + skipped) problems.push('enumerated != screened + denied + binary + too_large + gitignored + excluded');
   const belowThreshold = omissions.filter((o) => o.reason === 'below_threshold').length;
   if (filesScreened !== filesIncluded + belowThreshold + (coverage.filesUnevaluated ?? 0)) {
     problems.push('screened != included + below_threshold + unevaluated');
   }
-  if (omissions.length !== filesDenied + filesBinary + belowThreshold) problems.push('omission ledger incomplete');
+  if (omissions.length !== skipped + belowThreshold) problems.push('omission ledger incomplete');
   return problems;
 }
 
@@ -208,9 +253,32 @@ export async function callJev(body, { apiKey, fetchImpl = fetch, endpoint = ENDP
 
 // ---------------------------------------------------------------- filesystem
 
-export async function enumerate(root) {
+export async function enumerate(root, { respectGitignore = true, exclude = [] } = {}) {
   const files = [];
   const omissions = [];
+  const layers = [];
+  const unsupportedIgnores = [];
+  const loadIgnore = async (dir, base) => {
+    if (!respectGitignore) return null;
+    try {
+      const matcher = compileIgnore(await readFile(join(dir, '.gitignore'), 'utf8'));
+      unsupportedIgnores.push(...matcher.unsupported.map((r) => (base ? `${base}/${r}` : r)));
+      const layer = { base, matcher };
+      layers.push(layer);
+      return layer;
+    } catch { return null; }
+  };
+  // A path is ignored when any .gitignore at or above it says so, each tested
+  // relative to its own directory, the way git itself scopes them.
+  const isIgnored = (rel, isDir) => layers.some((layer) => {
+    if (!layer.base) return ignored(layer.matcher, rel, isDir);
+    if (!rel.startsWith(`${layer.base}/`)) return false;
+    return ignored(layer.matcher, rel.slice(layer.base.length + 1), isDir);
+  });
+  // Vendored or third-party trees that git tracks but that are not this
+  // project's own surface. Same syntax as a gitignore line.
+  const excluded = exclude.length ? compileIgnore(exclude.join('\n')) : null;
+  await loadIgnore(root, '');
   async function walk(dir) {
     let listing;
     try { listing = await readdir(dir, { withFileTypes: true }); } catch { return; }
@@ -220,17 +288,23 @@ export async function enumerate(root) {
       if (item.isSymbolicLink()) { omissions.push({ path: rel, reason: 'denied' }); continue; }
       if (item.isDirectory()) {
         if (DENY_SEGMENT.test(item.name)) continue;
+        if (isIgnored(rel, true)) { omissions.push({ path: `${rel}/`, reason: 'gitignored' }); continue; }
+        if (ignored(excluded, rel, true)) { omissions.push({ path: `${rel}/`, reason: 'excluded' }); continue; }
+        await loadIgnore(abs, rel);
         await walk(abs);
         continue;
       }
       if (!item.isFile()) continue;
+      if (isIgnored(rel, false)) { omissions.push({ path: rel, reason: 'gitignored' }); continue; }
+      if (ignored(excluded, rel, false)) { omissions.push({ path: rel, reason: 'excluded' }); continue; }
       const reason = denyPath(rel);
       if (reason) { omissions.push({ path: rel, reason }); continue; }
       files.push({ path: rel, abs });
     }
   }
   await walk(root);
-  return { files, omissions };
+  const ignoreRules = layers.reduce((n, l) => n + l.matcher.rules.length, 0);
+  return { files, omissions, ignoreRules, ignoreFiles: layers.length, unsupportedIgnores };
 }
 
 export const treeHashOf = (files) =>
@@ -238,9 +312,9 @@ export const treeHashOf = (files) =>
 
 // ---------------------------------------------------------------- stage 1
 
-export async function triage(root, { apiKey, questions, batchSize, fetchImpl = fetch, log = () => {} }) {
+export async function triage(root, { apiKey, questions, batchSize, exclude = [], fetchImpl = fetch, log = () => {} }) {
   const policy = questions.policy;
-  const { files, omissions } = await enumerate(root);
+  const { files, omissions, ignoreRules, ignoreFiles, unsupportedIgnores } = await enumerate(root, { exclude });
   const readable = [];
   for (const file of files) {
     const info = await stat(file.abs);
@@ -307,13 +381,17 @@ export async function triage(root, { apiKey, questions, batchSize, fetchImpl = f
     filesDenied: omissions.filter((o) => o.reason === 'denied').length,
     filesBinary: omissions.filter((o) => o.reason === 'binary').length,
     filesTooLarge: omissions.filter((o) => o.reason === 'too_large').length,
+    filesGitignored: omissions.filter((o) => o.reason === 'gitignored').length,
+    filesExcluded: omissions.filter((o) => o.reason === 'excluded').length,
+    excludePatterns: exclude,
+    ignoreRules, ignoreFiles, unsupportedIgnores,
     filesScreened: readable.length,
     filesIncluded: scored.filter((f) => f.included).length,
     filesUnevaluated: scored.filter((f) => f.verdict === 'unevaluated').length,
     filesTruncated: scored.filter((f) => f.included && f.truncated).length,
     omissions: omissions.sort((a, b) => a.path.localeCompare(b.path)),
   };
-  coverage.filesEnumerated = readable.length + coverage.filesDenied + coverage.filesBinary + coverage.filesTooLarge;
+  coverage.filesEnumerated = readable.length + coverage.filesDenied + coverage.filesBinary + coverage.filesTooLarge + coverage.filesGitignored + coverage.filesExcluded;
 
   const shadow = {
     heuristicSelected: scored.filter((f) => f.heuristic).length,
@@ -479,11 +557,14 @@ export function render(doc) {
   L.push(`Generated ${doc.generatedAt} by jev-flowmap against tree \`${doc.treeHash.slice(0, 12)}\`, model \`${doc.model}\`, policy \`${doc.policyVersion}\`.`, '');
 
   L.push('## Coverage', '');
-  L.push(`Enumerated ${c.filesEnumerated} files. Denied ${c.filesDenied}, binary ${c.filesBinary}, over size limit ${c.filesTooLarge ?? 0}.`);
+  L.push(`Enumerated ${c.filesEnumerated} files. Denied ${c.filesDenied}, binary ${c.filesBinary}, over size limit ${c.filesTooLarge ?? 0}, gitignored ${c.filesGitignored ?? 0}, excluded ${c.filesExcluded ?? 0}.`);
   L.push(`Screened ${c.filesScreened}, included ${c.filesIncluded}, truncated ${c.filesTruncated}, unevaluated ${c.filesUnevaluated ?? 0}.`);
   const below = c.omissions.filter((o) => o.reason === 'below_threshold').length;
   L.push(`${below} files were omitted below the reach threshold and are listed in the omission ledger.`);
   L.push('This map covers the included files only.', '');
+  if (c.unsupportedIgnores?.length) {
+    L.push(`> ${c.unsupportedIgnores.length} gitignore negation rule(s) were not applied: ${c.unsupportedIgnores.join(', ')}. Files they re-include were skipped.`, '');
+  }
   if (!doc.calibrated) L.push('> Thresholds in this run are policy defaults, not measured values.', '');
 
   if (doc.shadow) {
@@ -494,7 +575,13 @@ export function render(doc) {
   for (const surface of doc.surfaces) {
     L.push(`## Surface: ${surface.kind}`, '');
     for (const flow of doc.flows.filter((f) => f.surface === surface.kind)) {
-      L.push(`### ${flow.title} (${flow.label})`, '');
+      // A flow can have every step verified and still be broken for a user.
+      // Say so in the heading rather than letting "verified" stand alone.
+      const findings = [
+        flow.gaps.length ? `${flow.gaps.length} gap${flow.gaps.length > 1 ? 's' : ''}` : null,
+        flow.deadEnds.length ? `${flow.deadEnds.length} dead end${flow.deadEnds.length > 1 ? 's' : ''}` : null,
+      ].filter(Boolean);
+      L.push(`### ${flow.title} (${[flow.label, ...findings].join(', ')})`, '');
       if (flow.entryPoint) L.push(`Entry point: \`${flow.entryPoint.path}\``, '');
       L.push('| # | Actor | Action | Evidence | Label | Notes |', '|---|---|---|---|---|---|');
       for (const s of flow.steps) {
@@ -505,7 +592,7 @@ export function render(doc) {
       }
       L.push('');
       for (const g of flow.gaps) L.push(`- Gap after step ${g.afterStep}: ${g.reason}`);
-      for (const d of flow.deadEnds) L.push(`- Dead end at step ${d.index ?? d.atStep}: ${d.reason}`);
+      for (const d of flow.deadEnds) L.push(`- Dead end at step ${d.atStep}: ${d.reason}`);
       if (flow.gaps.length || flow.deadEnds.length) L.push('');
     }
   }
@@ -557,7 +644,8 @@ async function main(argv) {
   if (command === 'triage') {
     const root = resolve(rest[0] ?? '.');
     const batchSize = Number(flag(rest, 'batch', questions.policy.batchSize));
-    const doc = await triage(root, { apiKey, questions, batchSize, log });
+    const exclude = flag(rest, 'exclude', '').split(',').map((x) => x.trim()).filter(Boolean);
+    const doc = await triage(root, { apiKey, questions, batchSize, exclude, log });
     const problems = checkCoverage(doc.coverage);
     if (problems.length) log(`coverage accounting problems: ${problems.join('; ')}`);
     await mkdir(outDir, { recursive: true });
@@ -593,7 +681,7 @@ async function main(argv) {
     return;
   }
 
-  log('Commands: triage <root> [--out .flows] [--batch N] | verify <steps.json> [--out .flows] | render [--out .flows] [--md FLOWS.md] | eval <labeled.jsonl> [--batch 1,10,30]');
+  log('Commands: triage <root> [--out .flows] [--batch N] [--exclude vendor/,examples/] | verify <steps.json> [--out .flows] | render [--out .flows] [--md FLOWS.md] | eval <labeled.jsonl> [--batch 1,10,30]');
   process.exit(1);
 }
 

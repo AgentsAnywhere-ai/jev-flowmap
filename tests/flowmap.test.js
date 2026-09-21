@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import {
   denyPath, looksBinary, pathHeuristic, makeHead, chunkFiles, validateAnswer,
   labelTriage, labelStep, checkCoverage, estimateCostUsd, assemble, render,
-  triage, loadQuestions, policyVersion,
+  triage, loadQuestions, policyVersion, compileIgnore, ignored,
 } from '../skills/user-flows/scripts/flowmap.mjs';
 import { bestThreshold, summarize } from '../skills/user-flows/scripts/eval.mjs';
 
@@ -62,6 +62,63 @@ describe('path admission', () => {
   test('detects binary content by NUL byte, not by extension alone', () => {
     assert.equal(looksBinary(Buffer.from('plain text')), false);
     assert.equal(looksBinary(Buffer.from([0x50, 0x00, 0x4b])), true);
+  });
+});
+
+describe('gitignore', () => {
+  const m = compileIgnore('# comment\n\nnode_modules/\n.local/\ndist/\n*.log\n/secret-root.txt\n!keep.log\n');
+
+  test('ignores directories and everything under them', () => {
+    assert.equal(ignored(m, '.local', true), true);
+    assert.equal(ignored(m, '.local/proof.json'), true);
+    assert.equal(ignored(m, 'dist/worker/index.js'), true);
+  });
+
+  test('ignores glob patterns at any depth', () => {
+    assert.equal(ignored(m, 'build.log'), true);
+    assert.equal(ignored(m, 'a/b/deploy.log'), true);
+  });
+
+  test('applies a rooted rule only at the root', () => {
+    assert.equal(ignored(m, 'secret-root.txt'), true);
+    assert.equal(ignored(m, 'nested/secret-root.txt'), false);
+  });
+
+  test('does not ignore ordinary source', () => {
+    for (const ok of ['src/app.ts', 'README.md', 'localization/en.json', 'distribution.md']) {
+      assert.equal(ignored(m, ok), false, ok);
+    }
+  });
+
+  test('records negations as unsupported rather than half-applying them', () => {
+    assert.deepEqual(m.unsupported, ['!keep.log']);
+    assert.equal(ignored(m, 'keep.log'), true, 'a negated file stays skipped, never silently read');
+  });
+
+  test('no gitignore means nothing is ignored', () => {
+    assert.equal(ignored(null, 'anything'), false);
+  });
+
+  // Found by running against a real project: minified build output under a
+  // nested .gitignore was screened and would have been uploaded.
+  test('a nested gitignore scopes to its own directory', async () => {
+    const { enumerate } = await import('../skills/user-flows/scripts/flowmap.mjs');
+    const root = await mkdtemp(join(tmpdir(), 'flowmap-nested-'));
+    await mkdir(join(root, 'sub', 'generated'), { recursive: true });
+    await writeFile(join(root, '.gitignore'), 'root-only.txt\n');
+    await writeFile(join(root, 'sub', '.gitignore'), 'generated/\n');
+    await writeFile(join(root, 'root-only.txt'), 'x');
+    await writeFile(join(root, 'sub', 'generated', 'bundle.js'), 'x');
+    await writeFile(join(root, 'sub', 'real.js'), 'x');
+    await writeFile(join(root, 'generated', 'kept.js').replace('/generated/', '/'), 'x');
+
+    const { files, omissions, ignoreFiles } = await enumerate(root);
+    const paths = files.map((f) => f.path).sort();
+    assert.equal(ignoreFiles, 2, 'both gitignore files are loaded');
+    assert.ok(paths.includes('sub/real.js'));
+    assert.ok(!paths.some((p) => p.includes('generated')), 'the nested rule hides its own directory');
+    assert.ok(!paths.includes('root-only.txt'));
+    assert.ok(omissions.some((o) => o.path.startsWith('sub/generated')));
   });
 });
 
@@ -182,8 +239,8 @@ describe('policy bands', () => {
 
 describe('coverage accounting', () => {
   const base = {
-    filesEnumerated: 10, filesDenied: 2, filesBinary: 1, filesScreened: 7,
-    filesIncluded: 3, filesUnevaluated: 0,
+    filesEnumerated: 10, filesDenied: 2, filesBinary: 1, filesTooLarge: 0, filesGitignored: 0, filesExcluded: 0,
+    filesScreened: 7, filesIncluded: 3, filesUnevaluated: 0,
     omissions: [
       { path: 'a', reason: 'denied' }, { path: 'b', reason: 'denied' }, { path: 'c', reason: 'binary' },
       { path: 'd', reason: 'below_threshold' }, { path: 'e', reason: 'below_threshold' },
@@ -216,8 +273,8 @@ describe('cost', () => {
 const triageDoc = {
   root: '/repo', treeHash: 'a'.repeat(64),
   coverage: {
-    filesEnumerated: 5, filesDenied: 1, filesBinary: 0, filesTooLarge: 0, filesScreened: 4,
-    filesIncluded: 2, filesUnevaluated: 0, filesTruncated: 1,
+    filesEnumerated: 5, filesDenied: 1, filesBinary: 0, filesTooLarge: 0, filesGitignored: 0, filesExcluded: 0,
+    filesScreened: 4, filesIncluded: 2, filesUnevaluated: 0, filesTruncated: 1,
     omissions: [{ path: 'x', reason: 'denied' }, { path: 'y', reason: 'below_threshold', reach: 0.1 }, { path: 'z', reason: 'below_threshold', reach: 0.2 }],
   },
   shadow: { heuristicSelected: 3, jevSelected: 2, agreed: 3, jevOnly: [], heuristicOnly: [] },
@@ -310,6 +367,22 @@ describe('render', () => {
 
   test('the cost line marks itself as the Jev charge only', () => {
     assert.ok(md.includes('This is the Jev charge only'));
+  });
+
+  // A flow whose every step verified can still be broken for a user. The
+  // heading must not let "verified" stand alone when findings exist.
+  test('gaps and dead ends appear in the flow heading, not only below it', () => {
+    const withFindings = assemble(triageDoc, {
+      flows: [{ id: 'f', title: 'F', surface: 'cli', steps: [
+        { index: 0, actor: 'a', action: 'x', evidence: [] },
+        { index: 1, actor: 'a', action: 'y', evidence: [] },
+      ] }],
+    }, { usage: {}, verdicts: {
+      'f:0': { judgments: { supported: 0.95, terminal_failure: 0.9 }, label: 'verified', edge: 'keep', escalate: [], guarded: false, deadEnd: true, destructive: false, evidence: [] },
+      'f:1': { judgments: { supported: 0.95, reachable: 0.1 }, label: 'verified', edge: 'gap', escalate: [], guarded: false, deadEnd: false, destructive: false, evidence: [] },
+    } }, questions);
+    const heading = render(withFindings).split('\n').find((l) => l.startsWith('### F ('));
+    assert.match(heading, /verified, 1 gap, 1 dead end/);
   });
 });
 

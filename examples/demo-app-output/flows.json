@@ -1,0 +1,620 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-21T15:35:49.735Z",
+  "repoRoot": "<repo>/examples/demo-app",
+  "treeHash": "ff231b44cb4a90ece520ce247fe338c079b60362d8cae7e31329c38cb8ea61ad",
+  "model": "jev-1.13.0",
+  "policyVersion": "user-flows-v1+643c063eb620",
+  "calibrated": false,
+  "coverage": {
+    "filesEnumerated": 10,
+    "filesDenied": 0,
+    "filesBinary": 0,
+    "filesTooLarge": 0,
+    "filesGitignored": 0,
+    "filesExcluded": 0,
+    "excludePatterns": [],
+    "ignoreRules": 0,
+    "ignoreFiles": 0,
+    "unsupportedIgnores": [],
+    "filesScreened": 10,
+    "filesIncluded": 5,
+    "filesUnevaluated": 0,
+    "filesTruncated": 4,
+    "omissions": [
+      {
+        "path": "package.json",
+        "reason": "below_threshold",
+        "reach": 0.04
+      },
+      {
+        "path": "README.md",
+        "reason": "below_threshold",
+        "reach": 0.05
+      },
+      {
+        "path": "src/db.js",
+        "reason": "below_threshold",
+        "reach": 0.05
+      },
+      {
+        "path": "src/session.js",
+        "reason": "below_threshold",
+        "reach": 0.08
+      },
+      {
+        "path": "src/types.js",
+        "reason": "below_threshold",
+        "reach": 0.05
+      }
+    ]
+  },
+  "shadow": {
+    "heuristicSelected": 2,
+    "jevSelected": 5,
+    "agreed": 7,
+    "jevOnly": [
+      "src/server.js",
+      "src/web/account.js",
+      "src/web/signup.js"
+    ],
+    "heuristicOnly": []
+  },
+  "surfaces": [
+    {
+      "kind": "browser_ui",
+      "entryPoints": 2
+    },
+    {
+      "kind": "http_api",
+      "entryPoints": 1
+    },
+    {
+      "kind": "agent_tool",
+      "entryPoints": 1
+    },
+    {
+      "kind": "cli",
+      "entryPoints": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "signup",
+      "title": "Create an account and land on the account screen",
+      "surface": "browser_ui",
+      "label": "partial",
+      "entryPoint": {
+        "path": "src/web/signup.js",
+        "startLine": 2,
+        "endLine": 10
+      },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "signed-out visitor",
+          "action": "open the signup screen and see an email form",
+          "precondition": "no session cookie",
+          "effect": "a form with an email field and a submit button is rendered",
+          "evidence": [
+            {
+              "path": "src/web/signup.js",
+              "startLine": 1,
+              "endLine": 10,
+              "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+            }
+          ],
+          "judgments": {
+            "supported": 0.67,
+            "reachable": 0.68,
+            "guarded": 0.16,
+            "terminal_failure": 0.04,
+            "destructive": 0.03
+          },
+          "label": "unverified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 1,
+          "actor": "signed-out visitor",
+          "action": "submit the email address",
+          "precondition": "the signup form is rendered",
+          "effect": "a POST to /api/signup is sent with the email",
+          "evidence": [
+            {
+              "path": "src/web/signup.js",
+              "startLine": 11,
+              "endLine": 15,
+              "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+            }
+          ],
+          "judgments": {
+            "supported": 0.9,
+            "reachable": 0.87,
+            "guarded": 0.08,
+            "terminal_failure": 0.05,
+            "destructive": 0.27
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 2,
+          "actor": "the API",
+          "action": "reject an email with no @ before creating anything",
+          "precondition": "a signup request arrived",
+          "effect": "a 400 invalid_email response, and the screen shows a retry message",
+          "evidence": [
+            {
+              "path": "src/server.js",
+              "startLine": 6,
+              "endLine": 9,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            },
+            {
+              "path": "src/web/signup.js",
+              "startLine": 16,
+              "endLine": 21,
+              "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+            }
+          ],
+          "judgments": {
+            "supported": 0.95,
+            "reachable": 0.92,
+            "guarded": 0.68,
+            "terminal_failure": 0.03,
+            "destructive": 0.04
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 3,
+          "actor": "the API",
+          "action": "create the account and set a session cookie",
+          "precondition": "the email passed validation",
+          "effect": "a 201 with the new id, and a session cookie on the response",
+          "evidence": [
+            {
+              "path": "src/server.js",
+              "startLine": 6,
+              "endLine": 13,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            }
+          ],
+          "judgments": {
+            "supported": 0.96,
+            "reachable": 0.34,
+            "guarded": 0.87,
+            "terminal_failure": 0.05,
+            "destructive": 0.04
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 4,
+          "actor": "signed-out visitor",
+          "action": "be redirected to the account screen",
+          "precondition": "signup returned a success response",
+          "effect": "the browser navigates to /account",
+          "evidence": [
+            {
+              "path": "src/web/signup.js",
+              "startLine": 16,
+              "endLine": 23,
+              "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47"
+            }
+          ],
+          "judgments": {
+            "supported": 0.92,
+            "reachable": 0.74,
+            "guarded": 0.55,
+            "terminal_failure": 0.06,
+            "destructive": 0.03
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        }
+      ],
+      "gaps": [],
+      "deadEnds": []
+    },
+    {
+      "id": "account",
+      "title": "View the account and delete it",
+      "surface": "browser_ui",
+      "label": "verified",
+      "entryPoint": {
+        "path": "src/web/account.js",
+        "startLine": 2,
+        "endLine": 21
+      },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "signed-in person",
+          "action": "load the account screen, which fetches the account",
+          "precondition": "arrived at /account",
+          "effect": "a GET to /api/account is sent with the session cookie",
+          "evidence": [
+            {
+              "path": "src/web/account.js",
+              "startLine": 1,
+              "endLine": 5,
+              "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+            }
+          ],
+          "judgments": {
+            "supported": 0.86,
+            "reachable": 0.43,
+            "guarded": 0.53,
+            "terminal_failure": 0.75,
+            "destructive": 0.05
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 1,
+          "actor": "the API",
+          "action": "check the session before returning the account",
+          "precondition": "an account request arrived",
+          "effect": "a 401 when the session is missing or expired, otherwise the account",
+          "evidence": [
+            {
+              "path": "src/server.js",
+              "startLine": 15,
+              "endLine": 19,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            },
+            {
+              "path": "src/session.js",
+              "startLine": 1,
+              "endLine": 10,
+              "sha256": "135f0d7a8f71a0e7ec4f9cb721522787d9b96fb977b10c341f78857b4f56ab4b"
+            }
+          ],
+          "judgments": {
+            "supported": 0.96,
+            "reachable": 0.92,
+            "guarded": 0.92,
+            "terminal_failure": 0.1,
+            "destructive": 0.04
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 2,
+          "actor": "person with an expired session",
+          "action": "land on a blank account screen",
+          "precondition": "the account request returned 401",
+          "effect": "the page is emptied and nothing further is rendered",
+          "evidence": [
+            {
+              "path": "src/web/account.js",
+              "startLine": 6,
+              "endLine": 10,
+              "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+            }
+          ],
+          "judgments": {
+            "supported": 0.86,
+            "reachable": 0.91,
+            "guarded": 0.86,
+            "terminal_failure": 0.96,
+            "destructive": 0.03
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 3,
+          "actor": "signed-in person",
+          "action": "delete the account",
+          "precondition": "the account screen rendered with a delete button",
+          "effect": "a DELETE to /api/account removes the record, then the browser navigates to /",
+          "evidence": [
+            {
+              "path": "src/web/account.js",
+              "startLine": 11,
+              "endLine": 21,
+              "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e"
+            },
+            {
+              "path": "src/server.js",
+              "startLine": 21,
+              "endLine": 26,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            }
+          ],
+          "judgments": {
+            "supported": 0.96,
+            "reachable": 0.07,
+            "guarded": 0.93,
+            "terminal_failure": 0.2,
+            "destructive": 0.98
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": true,
+          "guards": [],
+          "notes": ""
+        }
+      ],
+      "gaps": [
+        {
+          "afterStep": 2,
+          "reason": "no path from the prior step to \"delete the account\""
+        }
+      ],
+      "deadEnds": [
+        {
+          "atStep": 0,
+          "reason": "the evidence shows no message, retry or way back from this step"
+        },
+        {
+          "atStep": 2,
+          "reason": "the evidence shows no message, retry or way back from this step"
+        }
+      ]
+    },
+    {
+      "id": "api-signup",
+      "title": "Create an account over the HTTP API",
+      "surface": "http_api",
+      "label": "verified",
+      "entryPoint": {
+        "path": "src/server.js",
+        "startLine": 5,
+        "endLine": 14
+      },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "a developer's own program",
+          "action": "POST an email to /api/signup against the documented contract",
+          "precondition": "holds no session",
+          "effect": "a 201 with the new account id and a session cookie, or a 400 invalid_email",
+          "evidence": [
+            {
+              "path": "src/server.js",
+              "startLine": 1,
+              "endLine": 14,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            }
+          ],
+          "judgments": {
+            "supported": 0.91,
+            "reachable": 0.43,
+            "guarded": 0.9,
+            "terminal_failure": 0.05,
+            "destructive": 0.1
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 1,
+          "actor": "a developer's own program",
+          "action": "GET /api/account with the returned session cookie",
+          "precondition": "holds the session cookie from signup",
+          "effect": "the account JSON, or a 401 when the session is missing or expired",
+          "evidence": [
+            {
+              "path": "src/server.js",
+              "startLine": 15,
+              "endLine": 19,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            },
+            {
+              "path": "src/session.js",
+              "startLine": 1,
+              "endLine": 10,
+              "sha256": "135f0d7a8f71a0e7ec4f9cb721522787d9b96fb977b10c341f78857b4f56ab4b"
+            }
+          ],
+          "judgments": {
+            "supported": 0.96,
+            "reachable": 0.89,
+            "guarded": 0.97,
+            "terminal_failure": 0.06,
+            "destructive": 0.03
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        }
+      ],
+      "gaps": [],
+      "deadEnds": []
+    },
+    {
+      "id": "agent-tool",
+      "title": "Create an account as a discovered agent tool",
+      "surface": "agent_tool",
+      "label": "partial",
+      "entryPoint": {
+        "path": "src/tools.js",
+        "startLine": 5,
+        "endLine": 14
+      },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "an assistant",
+          "action": "list the available tools and read demo_create_account's schema",
+          "precondition": "connected to the tool surface",
+          "effect": "the tool name, description and input schema are returned without the handler",
+          "evidence": [
+            {
+              "path": "src/tools.js",
+              "startLine": 1,
+              "endLine": 14,
+              "sha256": "c5c4fe00c4bf66a38b8bf1e373fa09c422edbabf0b1609d01847078236b6f33d"
+            }
+          ],
+          "judgments": {
+            "supported": 0.79,
+            "reachable": 0.79,
+            "guarded": 0.05,
+            "terminal_failure": 0.03,
+            "destructive": 0.04
+          },
+          "label": "unverified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        },
+        {
+          "index": 1,
+          "actor": "an assistant",
+          "action": "call demo_create_account with an email",
+          "precondition": "the tool schema was read",
+          "effect": "the call is routed to the same POST /api/signup handler the API uses",
+          "evidence": [
+            {
+              "path": "src/tools.js",
+              "startLine": 5,
+              "endLine": 12,
+              "sha256": "c5c4fe00c4bf66a38b8bf1e373fa09c422edbabf0b1609d01847078236b6f33d"
+            },
+            {
+              "path": "src/server.js",
+              "startLine": 5,
+              "endLine": 14,
+              "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49"
+            }
+          ],
+          "judgments": {
+            "supported": 0.9,
+            "reachable": 0.94,
+            "guarded": 0.78,
+            "terminal_failure": 0.05,
+            "destructive": 0.08
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": true,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        }
+      ],
+      "gaps": [],
+      "deadEnds": []
+    },
+    {
+      "id": "cli-invite",
+      "title": "Invite someone from the terminal",
+      "surface": "cli",
+      "label": "verified",
+      "entryPoint": {
+        "path": "src/cli.js",
+        "startLine": 1,
+        "endLine": 15
+      },
+      "steps": [
+        {
+          "index": 0,
+          "actor": "an operator at a terminal",
+          "action": "run the invite command with an email argument",
+          "precondition": "has shell access to the project",
+          "effect": "an invite record is stored, or a usage message and a non-zero exit when the email is missing",
+          "evidence": [
+            {
+              "path": "src/cli.js",
+              "startLine": 1,
+              "endLine": 15,
+              "sha256": "2b986d36fbf9e56f3dc0083d1c98dfe4596d477bdec2cd809f52352da4908e39"
+            }
+          ],
+          "judgments": {
+            "supported": 0.96,
+            "reachable": 0.58,
+            "guarded": 0.52,
+            "terminal_failure": 0.05,
+            "destructive": 0.04
+          },
+          "label": "verified",
+          "escalated": false,
+          "guarded": false,
+          "destructive": false,
+          "guards": [],
+          "notes": ""
+        }
+      ],
+      "gaps": [],
+      "deadEnds": []
+    }
+  ],
+  "unsupportedClaims": [
+    {
+      "flowId": "account",
+      "index": 4,
+      "action": "confirm the deletion in a confirmation dialog",
+      "supported": 0.02
+    }
+  ],
+  "escalations": {
+    "used": 7,
+    "budget": 25,
+    "exhausted": false
+  },
+  "usage": {
+    "requests": 16,
+    "inputTokens": 24754,
+    "outputTokens": 1519,
+    "estimatedCostUsd": 0.00104
+  },
+  "limitations": [
+    "A `verified` label means the named checks passed against the supplied source. It does not mean the flow works, that it is complete, or that it was executed.",
+    "Thresholds are policy defaults, not calibrated values. No labeled evaluation has set them.",
+    "Nothing in this repository was run, built or opened in a browser.",
+    "Judgments rest on excerpts. Truncated files are named in the coverage section.",
+    "Probabilities are per-claim. They are never combined into an overall chance that this map is correct."
+  ]
+}

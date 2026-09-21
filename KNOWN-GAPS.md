@@ -43,6 +43,33 @@ The plugin ships a skill and no slash command. Driving the four stages by hand m
 typing node invocations. A `/user-flows` command wrapping the sequence is the
 obvious next addition, deferred until the stage boundaries stop moving.
 
+### Vendored trees need an explicit --exclude (opened 2026-09-21)
+
+Running against a real project surfaced 35 of 62 selected files coming from
+vendored third-party skill templates that git tracks. Jev was right about them:
+they are user-reachable code. They are just not that project's own surface, which
+is a distinction the question cannot make from a file excerpt. `--exclude` is the
+workaround. Inferring it, for example from a `vendor` or `templates` convention,
+is guesswork we have not earned.
+
+### Gitignore negations are not applied (opened 2026-09-21)
+
+`!pattern` lines are recorded as unsupported and the files they re-include stay
+skipped. Erring toward skipping is deliberate: a half-applied negation would read
+a file the project asked us not to read. The run names every rule it ignored.
+
 ## Closed
 
-Nothing yet. This plugin is at 0.1.0.
+### Own source classified as binary (closed 2026-09-21, v0.1.0)
+
+The first live run dropped `flowmap.mjs` from its own triage. A unicode escape in
+the path-validation regex had been written to disk as a raw NUL byte, so the file
+tripped the NUL-byte binary check. Fixed, with a regression test that scans every
+source file for raw control bytes.
+
+### Secrets and build output reached the provider (closed 2026-09-21, v0.1.0)
+
+Pointing the tool at a real project would have uploaded its ignored `.local/`
+tokens and, separately, minified build output sitting behind a nested
+`.gitignore`. Fixed three ways: a wider secret deny list, gitignore awareness
+including nested files, and build-output directories in the deny segments.

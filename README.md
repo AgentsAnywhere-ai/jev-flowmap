@@ -28,6 +28,22 @@ stage 4  escalation    agent   re-read the uncertain ones with full-file context
          render        code    assemble the graph, write the document
 ```
 
+## See it work
+
+[`examples/demo-app-output/`](examples/demo-app-output/) holds the real artifacts
+from a real run against [`examples/demo-app/`](examples/demo-app/), a synthetic app
+with four surfaces, a guard, a destructive step and a deliberate dead end.
+
+The proposed steps in that run deliberately include one the source does not support:
+a deletion confirmation dialog that does not exist. Verification returned
+`supported: 0.02` and moved it out of the graph into "claims the source does not
+support". It also found the dead end (`terminal_failure: 0.96`) and the destructive
+step (`destructive: 0.98`) on its own. 16 requests, about 1.3 seconds, $0.0010.
+
+Measured on a real 342-file project: 327 files screened in 33 requests in 1.1
+seconds for $0.0059, selecting 62 entry points where the naive path heuristic found
+14. Those are two runs on two repositories, not a benchmark.
+
 ## Install
 
 ```sh
@@ -46,7 +62,7 @@ Ask Claude to map the user flows of a repository and the skill activates. Or dri
 the stages by hand:
 
 ```sh
-node skills/user-flows/scripts/flowmap.mjs triage ../some-repo
+node skills/user-flows/scripts/flowmap.mjs triage ../some-repo --exclude 'vendor/,examples/'
 # write .flows/steps.json
 node skills/user-flows/scripts/flowmap.mjs verify .flows/steps.json
 node skills/user-flows/scripts/flowmap.mjs render
@@ -57,9 +73,12 @@ node skills/user-flows/scripts/flowmap.mjs render
 `FLOWS.md` opens with a coverage block, before any flow, because a partial map that
 reads like a complete one is the specific failure this tool exists to prevent:
 
-> Enumerated 412 files. Denied 38, binary 11. Screened 363, included 47, truncated 6.
-> 316 files were omitted below the reach threshold and are listed in the omission
-> ledger. This map covers the included files only.
+> Enumerated 342 files. Denied 5, binary 3, over size limit 1, gitignored 10,
+> excluded 0. Screened 327, included 62, truncated 48, unevaluated 0. 265 files were
+> omitted below the reach threshold and are listed in the omission ledger. This map
+> covers the included files only.
+
+That block is from the 342-file run above, not an illustration.
 
 Every omitted file is named in the ledger with the probability that omitted it.
 Nothing is summarized away.
@@ -81,6 +100,10 @@ under "claims the source does not support," rather than quietly dropped.
 - **Coverage is partial by construction.** A repository whose entry points are
   declared somewhere the 600-byte head excerpt does not reach will be
   under-screened. The coverage block is how you find out.
+- **Gitignored files are skipped**, including via nested `.gitignore` files, and
+  every skip is named in the omission ledger. Gitignore negations (`!pattern`) are
+  not applied; files they re-include stay skipped and the run says which rules it
+  ignored. Vendored trees that git *does* track need `--exclude`.
 - **Jev is text-only**, and documented as weak at arithmetic, counting, dates,
   indirect questions, long irrelevant context and adversarial input. All counting
   here happens in code, state is kept short, and source text is treated as evidence

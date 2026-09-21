@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-21T15:34:19.467Z",
+  "root": "<repo>/examples/demo-app",
+  "treeHash": "ff231b44cb4a90ece520ce247fe338c079b60362d8cae7e31329c38cb8ea61ad",
+  "model": "jev-1.13.0",
+  "policyVersion": "user-flows-v1+643c063eb620",
+  "calibrated": false,
+  "coverage": {
+    "filesEnumerated": 10,
+    "filesDenied": 0,
+    "filesBinary": 0,
+    "filesTooLarge": 0,
+    "filesGitignored": 0,
+    "filesExcluded": 0,
+    "excludePatterns": [],
+    "ignoreRules": 0,
+    "ignoreFiles": 0,
+    "unsupportedIgnores": [],
+    "filesScreened": 10,
+    "filesIncluded": 5,
+    "filesUnevaluated": 0,
+    "filesTruncated": 4,
+    "omissions": [
+      {
+        "path": "package.json",
+        "reason": "below_threshold",
+        "reach": 0.04
+      },
+      {
+        "path": "README.md",
+        "reason": "below_threshold",
+        "reach": 0.05
+      },
+      {
+        "path": "src/db.js",
+        "reason": "below_threshold",
+        "reach": 0.05
+      },
+      {
+        "path": "src/session.js",
+        "reason": "below_threshold",
+        "reach": 0.08
+      },
+      {
+        "path": "src/types.js",
+        "reason": "below_threshold",
+        "reach": 0.05
+      }
+    ]
+  },
+  "shadow": {
+    "heuristicSelected": 2,
+    "jevSelected": 5,
+    "agreed": 7,
+    "jevOnly": [
+      "src/server.js",
+      "src/web/account.js",
+      "src/web/signup.js"
+    ],
+    "heuristicOnly": []
+  },
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "5c835ba9027e97515ea8394e6a4db2238849df2ba075c8b300448f5d729ac0c0",
+      "bytes": 147,
+      "reach": 0.04,
+      "heuristic": false,
+      "truncated": false,
+      "included": false,
+      "verdict": "omit"
+    },
+    {
+      "path": "README.md",
+      "sha256": "e10f239e2d92a3c34b8995237e5b96f132c2edb9f74b604d9a23ef7ad1594633",
+      "bytes": 629,
+      "reach": 0.05,
+      "heuristic": false,
+      "truncated": true,
+      "included": false,
+      "verdict": "omit"
+    },
+    {
+      "path": "src/cli.js",
+      "sha256": "2b986d36fbf9e56f3dc0083d1c98dfe4596d477bdec2cd809f52352da4908e39",
+      "bytes": 459,
+      "reach": 0.97,
+      "heuristic": true,
+      "truncated": false,
+      "included": true,
+      "verdict": "include"
+    },
+    {
+      "path": "src/db.js",
+      "sha256": "b7a88c7c11aaf90fb724087e944b0004f419e9f540b44dc87d44f52b1b30b6f2",
+      "bytes": 227,
+      "reach": 0.05,
+      "heuristic": false,
+      "truncated": false,
+      "included": false,
+      "verdict": "omit"
+    },
+    {
+      "path": "src/server.js",
+      "sha256": "a652a19dd8591202e041c1baa074583ef14c4e6c372d24da6d2a54387d9ddc49",
+      "bytes": 1159,
+      "reach": 0.95,
+      "heuristic": false,
+      "truncated": true,
+      "included": true,
+      "verdict": "include"
+    },
+    {
+      "path": "src/session.js",
+      "sha256": "135f0d7a8f71a0e7ec4f9cb721522787d9b96fb977b10c341f78857b4f56ab4b",
+      "bytes": 391,
+      "reach": 0.08,
+      "heuristic": false,
+      "truncated": false,
+      "included": false,
+      "verdict": "omit"
+    },
+    {
+      "path": "src/tools.js",
+      "sha256": "c5c4fe00c4bf66a38b8bf1e373fa09c422edbabf0b1609d01847078236b6f33d",
+      "bytes": 637,
+      "reach": 0.95,
+      "heuristic": true,
+      "truncated": true,
+      "included": true,
+      "verdict": "include"
+    },
+    {
+      "path": "src/types.js",
+      "sha256": "88b84138ea91c63e6ea9d5248b4929d90575d56a7220d7402ed297f5405ba1e3",
+      "bytes": 161,
+      "reach": 0.05,
+      "heuristic": false,
+      "truncated": false,
+      "included": false,
+      "verdict": "omit"
+    },
+    {
+      "path": "src/web/account.js",
+      "sha256": "e64825268f3ce124e4befbdde21ef6aa174097339d62ecc2e3ca7066cd21859e",
+      "bytes": 725,
+      "reach": 0.93,
+      "heuristic": false,
+      "truncated": true,
+      "included": true,
+      "verdict": "include"
+    },
+    {
+      "path": "src/web/signup.js",
+      "sha256": "fb6b65c2267aa60052705a1f05e01fd6d27f79bb91bae42e3c930bd6499dbc47",
+      "bytes": 794,
+      "reach": 0.95,
+      "heuristic": false,
+      "truncated": true,
+      "included": true,
+      "verdict": "include"
+    }
+  ],
+  "usage": {
+    "requests": 1,
+    "inputTokens": 3812,
+    "outputTokens": 184,
+    "failures": [],
+    "estimatedCostUsd": 0.00016
+  }
+}
