@@ -1,6 +1,6 @@
 {
   "name": "jev-flowmap",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Tooling for the jev-flowmap Claude Code plugin. The plugin itself has no runtime dependencies.",

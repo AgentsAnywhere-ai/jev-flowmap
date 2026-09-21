@@ -1,0 +1,3 @@
+{"operation": "relevance_check", "callsPerDay": 480, "avgInputTokens": 900, "costPerCallUsd": 0.0031}
+{"operation": "next_worker", "callsPerDay": 40, "avgInputTokens": 1400, "costPerCallUsd": 0.0088}
+{"operation": "draft_ready", "callsPerDay": 40, "avgInputTokens": 1100, "costPerCallUsd": 0.0071}

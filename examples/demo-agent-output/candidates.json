@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-21T18:19:46.598Z",
+  "root": "<repo>/examples/demo-agent",
+  "candidates": [
+    {
+      "path": "src/loop.js",
+      "label": "chooseModelTier",
+      "kind": "model_call",
+      "named": true,
+      "matches": 2,
+      "startLine": 20,
+      "endLine": 42,
+      "matchLine": 26,
+      "evidence": "    messages: [{ role: 'user', content: `Goal: ${state.goal}\\nWork log: ${state.log}\\nIs the goal met? yes or no.` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function chooseModelTier(task) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 10,\n    messages: [{ role: 'user', content: `Does this task need the powerful model or the fast one?\\n${task}` }],\n  });\n  return response.content[0].text.includes('powerful') ? 'powerful' : 'fast';\n}\n\nexport async function run(state, workers) {\n  while (!stopAfterTenActions(state)) {\n    if (await areWeDone(state)) break;\n    const worker = await pickNextWorker(state, workers);\n    state.actions.push(worker);\n  }\n  return state;\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 39,
+          "text": "\n  const tier = await chooseModelTier(state.goal);\n  state.model = tier === 'powerful' ? 'claude-opus-5' : 'claude-haiku-4-5';"
+        }
+      ]
+    },
+    {
+      "path": "src/routing.js",
+      "label": "routeTicket",
+      "kind": "rule",
+      "named": true,
+      "matches": 2,
+      "startLine": 3,
+      "endLine": 18,
+      "matchLine": 9,
+      "evidence": "\nconst URGENT_KEYWORDS = ['asap', 'urgent', 'immediately', 'critical', 'outage', 'down', 'blocked', 'losing'];\nconst BILLING_TERMS = ['invoice', 'charge', 'refund', 'payment', 'card', 'subscription'];\n\nexport function routeTicket(ticket) {\n  const text = ticket.body.toLowerCase();\n  if (BILLING_TERMS.some((term) => text.includes(term))) return 'billing';\n  if (text.includes('error') || text.includes('crash') || text.includes('500') || text.includes('timeout')) return 'technical';\n  return 'general';\n}\n\nexport function isUrgent(ticket) {\n  const text = `${ticket.subject} ${ticket.body}`.toLowerCase();\n  return URGENT_KEYWORDS.some((word) => text.includes(word));\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 11,
+          "text": "export async function runTurn(state, ticket, passages, workers) {\n  const queue = ticket ? routeTicket(ticket) : null;\n  if (queue) put(`ticket:${ticket.id}:queue`, queue);"
+        }
+      ]
+    },
+    {
+      "path": "src/extract.js",
+      "label": "extractInvoiceNumber",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 1,
+      "endLine": 20,
+      "matchLine": 6,
+      "evidence": "import { anthropic } from './provider.js';\n\n// A frontier model asked to do a regex's job. The answer is exact, the format\n// is fixed, and the model is being paid to be occasionally creative about it.\nexport async function extractInvoiceNumber(document) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 30,\n    messages: [{ role: 'user', content: `Find the invoice number in this document and return it alone:\\n\\n${document}` }],\n  });\n  return response.content[0].text.trim();\n}\n\nexport async function extractDueDate(document) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 30,\n    messages: [{ role: 'user', content: `What is the due date in this document? Return it as YYYY-MM-DD.\\n\\n${document}` }],\n  });\n  return response.content[0].text.trim();",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 24,
+          "text": "  if (!invoice && state.request.document) {\n    const number = await extractInvoiceNumber(state.request.document);\n    if (number) put(`invoice:${number}`, state.request.id);"
+        }
+      ]
+    },
+    {
+      "path": "src/extract.js",
+      "label": "extractDueDate",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 9,
+      "endLine": 22,
+      "matchLine": 15,
+      "evidence": "    messages: [{ role: 'user', content: `Find the invoice number in this document and return it alone:\\n\\n${document}` }],\n  });\n  return response.content[0].text.trim();\n}\n\nexport async function extractDueDate(document) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 30,\n    messages: [{ role: 'user', content: `What is the due date in this document? Return it as YYYY-MM-DD.\\n\\n${document}` }],\n  });\n  return response.content[0].text.trim();\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 26,
+          "text": "    if (number) put(`invoice:${number}`, state.request.id);\n    const due = await extractDueDate(state.request.document);\n    if (due) state.dueDate = due;"
+        }
+      ]
+    },
+    {
+      "path": "src/loop.js",
+      "label": "pickNextWorker",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 2,
+      "endLine": 22,
+      "matchLine": 8,
+      "evidence": "import { stopAfterTenActions } from './limits.js';\n\n// Decisions the loop makes every turn. Each one ends as a value the code\n// branches on, and each one is currently a full generative call.\n\nexport async function pickNextWorker(state, workers) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 20,\n    messages: [{ role: 'user', content: `Goal: ${state.goal}\\nSo far: ${state.log}\\nWhich worker next? One of: ${workers.join(', ')}` }],\n  });\n  return response.content[0].text.trim();\n}\n\nexport async function areWeDone(state) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Goal: ${state.goal}\\nWork log: ${state.log}\\nIs the goal met? yes or no.` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 44,
+          "text": "\n  const worker = await pickNextWorker(state, workers);\n  const call = { worker, args: state.request };"
+        }
+      ]
+    },
+    {
+      "path": "src/loop.js",
+      "label": "areWeDone",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 11,
+      "endLine": 31,
+      "matchLine": 17,
+      "evidence": "    messages: [{ role: 'user', content: `Goal: ${state.goal}\\nSo far: ${state.log}\\nWhich worker next? One of: ${workers.join(', ')}` }],\n  });\n  return response.content[0].text.trim();\n}\n\nexport async function areWeDone(state) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Goal: ${state.goal}\\nWork log: ${state.log}\\nIs the goal met? yes or no.` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function chooseModelTier(task) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 10,\n    messages: [{ role: 'user', content: `Does this task need the powerful model or the fast one?\\n${task}` }],\n  });\n  return response.content[0].text.includes('powerful') ? 'powerful' : 'fast';",
+      "callSites": [
+        {
+          "path": "src/loop.js",
+          "line": 36,
+          "text": "  while (!stopAfterTenActions(state)) {\n    if (await areWeDone(state)) break;\n    const worker = await pickNextWorker(state, workers);"
+        },
+        {
+          "path": "src/turn.js",
+          "line": 42,
+          "text": "\n  if (await areWeDone(state)) return { done: true, state };\n"
+        }
+      ]
+    },
+    {
+      "path": "src/research.js",
+      "label": "relevanceCheck",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 1,
+      "endLine": 20,
+      "matchLine": 6,
+      "evidence": "import { anthropic } from './provider.js';\n\n// The expensive one. Twelve passages a turn, forty turns a day, all of it\n// asking a frontier model for a boolean and throwing the sentence away.\nexport async function relevanceCheck(passage, goal) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Is this passage relevant to the goal \"${goal}\"? Answer yes or no.\\n\\n${passage}` }],\n  });\n  const answer = response.content[0].text.trim().toLowerCase();\n  return answer.startsWith('y');\n}\n\nexport async function timeSensitivity(request) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Rate how time-sensitive this request is, 1 to 5:\\n${request}` }],\n  });",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 35,
+          "text": "  for (const passage of passages) {\n    if (await relevanceCheck(passage, state.goal)) kept.push(passage);\n  }"
+        }
+      ]
+    },
+    {
+      "path": "src/research.js",
+      "label": "timeSensitivity",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 10,
+      "endLine": 23,
+      "matchLine": 16,
+      "evidence": "  });\n  const answer = response.content[0].text.trim().toLowerCase();\n  return answer.startsWith('y');\n}\n\nexport async function timeSensitivity(request) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Rate how time-sensitive this request is, 1 to 5:\\n${request}` }],\n  });\n  return Number(response.content[0].text.trim());\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 30,
+          "text": "\n  const urgency = await timeSensitivity(state.request);\n  if (urgency >= 4) state.deadlineHours = 4;"
+        }
+      ]
+    },
+    {
+      "path": "src/review.js",
+      "label": "isDraftReadyForReview",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 1,
+      "endLine": 20,
+      "matchLine": 6,
+      "evidence": "import { anthropic } from './provider.js';\n\n// One question doing the work of four. When it fails you cannot tell which\n// part failed, because a single answer cannot say.\nexport async function isDraftReadyForReview(draft, goal) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Is this draft ready for review? It must cover the goal \"${goal}\", cite its sources, stay under the length cap, and avoid the forbidden claims.\\n\\n${draft}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function isToolCallSafe(call) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Is this tool call safe to run without asking a person first?\\n${JSON.stringify(call)}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 49,
+          "text": "\n  if (state.draft && !(await isDraftReadyForReview(state.draft, state.goal))) {\n    return { needsRevision: true, state };"
+        }
+      ]
+    },
+    {
+      "path": "src/review.js",
+      "label": "isToolCallSafe",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 9,
+      "endLine": 29,
+      "matchLine": 15,
+      "evidence": "    messages: [{ role: 'user', content: `Is this draft ready for review? It must cover the goal \"${goal}\", cite its sources, stay under the length cap, and avoid the forbidden claims.\\n\\n${draft}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function isToolCallSafe(call) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Is this tool call safe to run without asking a person first?\\n${JSON.stringify(call)}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function needsHuman(result) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Does this result need a person to look at it before it goes out?\\n${result}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 46,
+          "text": "  const call = { worker, args: state.request };\n  if (!(await isToolCallSafe(call))) return { blocked: 'unsafe_tool_call', call };\n  state.actions.push(worker);"
+        }
+      ]
+    },
+    {
+      "path": "src/review.js",
+      "label": "needsHuman",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 18,
+      "endLine": 31,
+      "matchLine": 24,
+      "evidence": "    messages: [{ role: 'user', content: `Is this tool call safe to run without asking a person first?\\n${JSON.stringify(call)}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n\nexport async function needsHuman(result) {\n  const response = await anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 5,\n    messages: [{ role: 'user', content: `Does this result need a person to look at it before it goes out?\\n${result}` }],\n  });\n  return response.content[0].text.trim().toLowerCase().startsWith('y');\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 52,
+          "text": "  }\n  if (state.draft && (await needsHuman(state.draft))) {\n    return { queuedForHuman: true, state };"
+        }
+      ]
+    },
+    {
+      "path": "src/routing.js",
+      "label": "isUrgent",
+      "kind": "rule",
+      "named": true,
+      "matches": 1,
+      "startLine": 10,
+      "endLine": 18,
+      "matchLine": 16,
+      "evidence": "  if (text.includes('error') || text.includes('crash') || text.includes('500') || text.includes('timeout')) return 'technical';\n  return 'general';\n}\n\nexport function isUrgent(ticket) {\n  const text = `${ticket.subject} ${ticket.body}`.toLowerCase();\n  return URGENT_KEYWORDS.some((word) => text.includes(word));\n}\n",
+      "callSites": [
+        {
+          "path": "src/turn.js",
+          "line": 13,
+          "text": "  if (queue) put(`ticket:${ticket.id}:queue`, queue);\n  if (ticket && isUrgent(ticket)) {\n    state.priority = 'high';"
+        }
+      ]
+    },
+    {
+      "path": "src/writing.js",
+      "label": "writeBriefing",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 1,
+      "endLine": 20,
+      "matchLine": 6,
+      "evidence": "import { anthropic } from './provider.js';\n\n// Everything here produces prose a person reads.\n\nexport async function writeBriefing(findings, goal) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 2000,\n    messages: [{ role: 'user', content: `Write a briefing on ${goal} from these findings:\\n${findings}` }],\n  });\n}\n\nexport async function draftReply(thread) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 800,\n    messages: [{ role: 'user', content: `Draft a reply to this thread:\\n${thread}` }],\n  });\n}\n",
+      "callSites": []
+    },
+    {
+      "path": "src/writing.js",
+      "label": "draftReply",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 8,
+      "endLine": 28,
+      "matchLine": 14,
+      "evidence": "    max_tokens: 2000,\n    messages: [{ role: 'user', content: `Write a briefing on ${goal} from these findings:\\n${findings}` }],\n  });\n}\n\nexport async function draftReply(thread) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 800,\n    messages: [{ role: 'user', content: `Draft a reply to this thread:\\n${thread}` }],\n  });\n}\n\nexport async function writePatch(issue, file) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 4000,\n    messages: [{ role: 'user', content: `Write a patch for ${issue} in:\\n${file}` }],\n  });\n}\n",
+      "callSites": []
+    },
+    {
+      "path": "src/writing.js",
+      "label": "writePatch",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 16,
+      "endLine": 36,
+      "matchLine": 22,
+      "evidence": "    max_tokens: 800,\n    messages: [{ role: 'user', content: `Draft a reply to this thread:\\n${thread}` }],\n  });\n}\n\nexport async function writePatch(issue, file) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 4000,\n    messages: [{ role: 'user', content: `Write a patch for ${issue} in:\\n${file}` }],\n  });\n}\n\nexport async function summariseFindings(findings) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 1200,\n    messages: [{ role: 'user', content: `Summarise:\\n${findings}` }],\n  });\n}\n",
+      "callSites": []
+    },
+    {
+      "path": "src/writing.js",
+      "label": "summariseFindings",
+      "kind": "model_call",
+      "named": true,
+      "matches": 1,
+      "startLine": 24,
+      "endLine": 36,
+      "matchLine": 30,
+      "evidence": "    max_tokens: 4000,\n    messages: [{ role: 'user', content: `Write a patch for ${issue} in:\\n${file}` }],\n  });\n}\n\nexport async function summariseFindings(findings) {\n  return anthropic.messages.create({\n    model: 'claude-opus-5',\n    max_tokens: 1200,\n    messages: [{ role: 'user', content: `Summarise:\\n${findings}` }],\n  });\n}\n",
+      "callSites": []
+    }
+  ],
+  "omissions": [
+    {
+      "path": "package.json",
+      "reason": "not_source"
+    }
+  ],
+  "scanned": 10,
+  "coverage": {
+    "filesEnumerated": 11,
+    "filesScanned": 10,
+    "filesNotSource": 1,
+    "filesGitignored": 0,
+    "filesExcluded": 0,
+    "filesDenied": 0,
+    "filesBinary": 0,
+    "candidatesFound": 16,
+    "candidatesClassified": 16,
+    "candidatesDropped": 0,
+    "ignoreRules": 0,
+    "ignoreFiles": 0,
+    "unsupportedIgnores": []
+  }
+}

@@ -1,0 +1,14 @@
+{"operation": "relevanceCheck", "callsPerDay": 480, "avgInputTokens": 6000, "costPerCallUsd": 0.0306}
+{"operation": "pickNextWorker", "callsPerDay": 40, "avgInputTokens": 14000, "costPerCallUsd": 0.0875}
+{"operation": "isDraftReadyForReview", "callsPerDay": 40, "avgInputTokens": 11000, "costPerCallUsd": 0.0712}
+{"operation": "isToolCallSafe", "callsPerDay": 100, "avgInputTokens": 1200, "costPerCallUsd": 0.0064}
+{"operation": "areWeDone", "callsPerDay": 40, "avgInputTokens": 9000, "costPerCallUsd": 0.0455}
+{"operation": "needsHuman", "callsPerDay": 40, "avgInputTokens": 2000, "costPerCallUsd": 0.0102}
+{"operation": "timeSensitivity", "callsPerDay": 40, "avgInputTokens": 800, "costPerCallUsd": 0.0042}
+{"operation": "chooseModelTier", "callsPerDay": 40, "avgInputTokens": 700, "costPerCallUsd": 0.0038}
+{"operation": "writeBriefing", "callsPerDay": 10, "avgInputTokens": 12000, "costPerCallUsd": 0.1120}
+{"operation": "draftReply", "callsPerDay": 30, "avgInputTokens": 4000, "costPerCallUsd": 0.0400}
+{"operation": "summariseFindings", "callsPerDay": 20, "avgInputTokens": 9000, "costPerCallUsd": 0.0750}
+{"operation": "writePatch", "callsPerDay": 5, "avgInputTokens": 18000, "costPerCallUsd": 0.1900}
+{"operation": "extractInvoiceNumber", "callsPerDay": 220, "avgInputTokens": 3500, "costPerCallUsd": 0.0180}
+{"operation": "extractDueDate", "callsPerDay": 220, "avgInputTokens": 3500, "costPerCallUsd": 0.0180}

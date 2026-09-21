@@ -1,20 +1,31 @@
 # jev-flowmap
 
+**Two ways to look at a codebase before you change it: what a user can actually do
+in it, and what your model calls are actually costing you.**
+
+A Claude Code plugin with two skills. Both read your repository and cite what they
+found. Neither one runs, builds or opens it.
+
+| Skill | Ask it | It gives you |
+|---|---|---|
+| **user-flows** | "Map the user flows in this repo" | Every path a user or calling program can take, each step citing the lines it came from, with dead ends and guards marked |
+| **operations-audit** | "Where is our LLM spend going?" | Every operation sorted into code / LLM / classifier, with the reason, and ranked by share of the bill |
+
+[Install](#install) · [Map user flows](#skill-one-map-the-user-flows) · [Audit operations](#skill-two-audit-the-operations) · [Limits](#limits)
+
+---
+
+# Skill one: map the user flows
+
 **Ask your coding agent how signup works in an unfamiliar repo, and it will tell you.
 Confidently. Including the steps that do not exist.**
 
-jev-flowmap makes the agent show its work instead. It maps the paths a user or a
+`user-flows` makes the agent show its work instead. It maps the paths a user or a
 calling program can take through a codebase, and every step in the output cites the
 lines it came from. Steps the source does not support are removed and listed
 separately, so you can see what the agent tried to claim and could not back up.
 
-A Claude Code plugin. It reads your repository. It never runs, builds or opens it.
-
-[Install](#install) · [What it is for](#what-it-is-for) · [How to use it](#how-to-use-it) · [Limits](#limits)
-
----
-
-## The problem it solves
+### The problem it solves
 
 An agent reading a codebase produces fluent prose about it. That prose mixes three
 things a reader cannot tell apart: what the agent read in the source, what it inferred
@@ -26,7 +37,7 @@ than no flow map, because you will act on it.
 The fix is not a better prompt. It is refusing to let a claim into the document
 without the bytes that establish it.
 
-## How it works
+### How it works
 
 Four stages. Ordinary code owns the workflow, every threshold and every number. A
 classifier model answers narrow yes-or-no questions. Your agent does the reasoning.
@@ -45,7 +56,7 @@ actor reach it from the previous step, is there a guard that can block it, does 
 actor get stranded here with no way forward, and does it delete, spend or send
 anything.
 
-## See it work
+### See it work
 
 [`examples/demo-app-output/`](examples/demo-app-output/) holds real artifacts from a
 real run against [`examples/demo-app/`](examples/demo-app/), a small app with a
@@ -63,7 +74,7 @@ already correctly excluded as not user-reachable on its own.
 
 Sixteen requests. About 1.3 seconds. **$0.0010.**
 
-## What it is for
+### What it is for
 
 Use it when:
 
@@ -83,6 +94,73 @@ Do not use it when:
 - **You want prose about architecture.** It maps what a user can reach, not how the
   system is built underneath.
 
+# Skill two: audit the operations
+
+**Every operation in your codebase gets one of three answers, and the answer decides
+what should be running it.**
+
+> Produces text a person reads → **LLM**.
+> Has one exact, computable answer → **code**.
+> Picks, scores or judges, and code acts on the result → **a classifier**.
+
+The third column is the one nobody has counted. It fills up with full generative
+calls being tokenized, sampled word by word, and parsed back into a boolean that an
+`if` statement branches on.
+
+`operations-audit` finds them. It scans for model call sites *and* for judgment
+written as keyword rules, which is the kind nobody thinks of as an AI operation at
+all. Then it sorts each one, names the question shape that would replace it, and
+ranks by share of the bill when you supply call volumes.
+
+It also reads where each result is **used**, not just where it is defined. Asked
+whether code branches on a result while looking only at the function that returns it,
+the honest answer is always no.
+
+### What it catches beyond the column
+
+The annotations are the useful part. From the worked example, unprompted:
+
+- A review gate asking four conditions as one question, flagged **compound**, so a
+  failure cannot say which condition failed.
+- A completion check asking the model whether it finished, flagged **check the
+  artifact, not the answer**.
+- A keyword router and an urgency check, flagged as **rules standing in for
+  judgment**. Written as conditions, and still not conditions.
+- A frontier model being paid to run a regex over invoice numbers.
+- A worker-selection step flagged **answers are not listable in advance**, which is
+  the honest caution: if the options cannot be written down first, no classifier
+  fixes that.
+
+### See it work
+
+[`examples/demo-agent-output/`](examples/demo-agent-output/) holds real artifacts from
+a real run against [`examples/demo-agent/`](examples/demo-agent/), a small research
+agent containing one of each case. Sixteen operations sorted in 0.6 seconds for
+$0.0015. The biggest line came back at **39.8% of the bill**: one yes-or-no question
+asked 480 times a day.
+
+One row is marked **?** rather than **X**, with its runner-up shown. That is the model
+saying it does not know, and the page refusing to hide it.
+
+### Using it
+
+```sh
+node skills/operations-audit/scripts/opaudit.mjs scan ../your-repo
+node skills/operations-audit/scripts/opaudit.mjs classify --volumes volumes.jsonl
+```
+
+Volumes are one JSON object per line, matched by operation name:
+
+```json
+{"operation": "relevanceCheck", "callsPerDay": 480, "avgInputTokens": 6000, "costPerCallUsd": 0.0306}
+```
+
+**Without volumes there is no cost section at all.** Call counts cannot be read out of
+source code, and a ranking built on a guess would be the most quotable number in the
+document.
+
+---
+
 ## Install
 
 ```sh
@@ -99,9 +177,9 @@ export TYPESAFE_API_KEY=...
 
 Restart Claude Code. Requires Node 22 or newer. No other dependencies, ever.
 
-## How to use it
+## Using them
 
-**In your agent**, just ask. The skill activates on requests like:
+**In your agent**, just ask. Whichever skill fits activates on its own:
 
 > Map the user flows in this repo
 >
@@ -109,12 +187,16 @@ Restart Claude Code. Requires Node 22 or newer. No other dependencies, ever.
 >
 > Which of these screens are behind auth?
 >
-> Do the flows in our docs still match the code?
+> Where is our LLM spend going?
+>
+> Which of our model calls could a classifier do?
+>
+> Audit this agent loop before we optimize it
 
 Your agent runs the stages, does the proposing and escalating itself, and hands you
-`FLOWS.md` plus a `flows.json` you can query.
+`FLOWS.md` or `OPERATIONS.md` plus the JSON behind it.
 
-**By hand**, if you would rather drive it:
+**By hand**, if you would rather drive the flow mapper yourself:
 
 ```sh
 node skills/user-flows/scripts/flowmap.mjs triage ../your-repo --exclude 'vendor/,examples/'
@@ -126,10 +208,10 @@ node skills/user-flows/scripts/flowmap.mjs render
 Each stage writes its own file, so you can read what was screened before paying for
 verification.
 
-## What the output says, and what it does not
+## Reading the output
 
-`FLOWS.md` opens with coverage, before any flow, because a partial map that reads like
-a complete one is the exact failure this tool exists to prevent:
+Both documents open with coverage, before any finding, because a partial result that
+reads like a complete one is the exact failure this plugin exists to prevent:
 
 > Enumerated 342 files. Denied 5, binary 3, over size limit 1, gitignored 10,
 > excluded 0. Screened 327, included 62, truncated 48, unevaluated 0. 265 files were
@@ -166,6 +248,12 @@ Stated plainly, because a tool about not overclaiming should not overclaim.
 - **The model is text-only** and documented as weak at arithmetic, counting, dates and
   long irrelevant context. All counting here happens in code, state is kept short, and
   source text is treated as evidence rather than as instructions.
+- **A column is not a migration.** The operations audit says where work looks like it
+  belongs. Whether a cheaper answer is as good is a question only a labeled set of your
+  own cases can settle, and this does not run one.
+- **A missing row is invisible.** The scanner finds model calls and rule-shaped
+  judgment. An operation expressed some other way is simply absent from the table, and
+  the coverage block is the only place that shows it.
 
 ## Cost
 
@@ -176,7 +264,7 @@ reports its own usage and an estimate, labeled as the model charge only.
 ## Development
 
 ```sh
-npm test    # node --test, 60 tests, no dependencies, no network
+npm test    # node --test, 103 tests, no dependencies, no network
 ```
 
 [docs/design.md](docs/design.md) is the full design: question wording, policy bands,

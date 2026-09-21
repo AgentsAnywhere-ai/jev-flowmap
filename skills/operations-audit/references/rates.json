@@ -1,0 +1,9 @@
+{
+  "checkedOn": "2026-09-21",
+  "jevModel": "jev-1.13.0",
+  "note": "Only the Jev rate ships here, because it is the one this plugin can cite. Add your own providers' rates yourself, from their current pricing page, on the day you run the audit. A rate table maintained by someone else is a wrong number waiting to be quoted in a meeting. If you would rather not maintain rates at all, put costPerCallUsd directly on each row of your volumes file and this table is not consulted.",
+  "units": "inputPerM and outputPerM are US dollars per million tokens.",
+  "rates": {
+    "jev-1.13.0": { "inputPerM": 0.042, "outputPerM": 0, "source": "TypeSafe published pricing, checked 2026-09-21" }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "jev-flowmap",
-  "description": "Map the user flows of a repository from its source, with evidence for every step.",
+  "description": "Read a codebase before you change it: map its user flows, and audit what its model calls cost.",
   "owner": {
     "name": "Agents Anywhere",
     "url": "https://agentsanywhere.ai"
@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "jev-flowmap",
-      "description": "Map the user flows of a repository from its source. Jev screens which files carry user-reachable behavior and verifies each claimed step against cited code; the plugin emits a flows.json graph and a rendered FLOWS.md with per-step evidence, coverage accounting, guard and dead-end detection. Static only: it never runs, builds or opens the project.",
+      "description": "Two ways to read a codebase before you change it. Map every user flow with per-step evidence and dead-end detection, and audit every operation into code, LLM or classifier columns ranked by share of the bill. Static only: it never runs, builds or opens the project.",
       "source": "./"
     }
   ]

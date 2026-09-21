@@ -47,7 +47,7 @@ the miss rate is unknown until the corpus exists.
 
 ### No command surface (opened 2026-09-21)
 
-The plugin ships a skill and no slash command. Driving the four stages by hand means
+The plugin ships two skills and no slash command. Driving the four stages by hand means
 typing node invocations. A `/user-flows` command wrapping the sequence is the
 obvious next addition, deferred until the stage boundaries stop moving.
 
@@ -65,6 +65,25 @@ is guesswork we have not earned.
 `!pattern` lines are recorded as unsupported and the files they re-include stay
 skipped. Erring toward skipping is deliberate: a half-applied negation would read
 a file the project asked us not to read. The run names every rule it ignored.
+
+### The operations audit has no eval either (opened 2026-09-21)
+
+Every threshold in `skills/operations-audit/references/questions.json` is invented,
+including the confidence level that decides whether a row prints as **X** or **?**.
+A labeled corpus for that skill would be a set of real operations with an agreed
+column, which is more contested than the user-flows corpus: two careful engineers
+will disagree on some rows, and that disagreement is data rather than noise.
+
+The `eval` subcommand does not exist for this skill yet at all.
+
+### The scanner finds two kinds of operation, and there are more (opened 2026-09-21)
+
+`opaudit scan` matches model call sites and judgment written as keyword or pattern
+rules. It does not find: a decision made by a human in a runbook, an operation
+expressed through an abstraction layer the patterns do not name, a prompt assembled
+far from where it is sent, or anything in a language whose call convention is not in
+the pattern list. A missing row is invisible by construction, which is why the
+coverage block leads the document.
 
 ### Only triage has an eval, and only the Noul kind (opened 2026-09-21)
 
