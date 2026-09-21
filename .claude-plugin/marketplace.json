@@ -1,0 +1,15 @@
+{
+  "name": "jev-flowmap",
+  "description": "Map the user flows of a repository from its source, with evidence for every step.",
+  "owner": {
+    "name": "Agents Anywhere",
+    "url": "https://agentsanywhere.ai"
+  },
+  "plugins": [
+    {
+      "name": "jev-flowmap",
+      "description": "Map the user flows of a repository from its source. Jev screens which files carry user-reachable behavior and verifies each claimed step against cited code; the plugin emits a flows.json graph and a rendered FLOWS.md with per-step evidence, coverage accounting, guard and dead-end detection. Static only: it never runs, builds or opens the project.",
+      "source": "./"
+    }
+  ]
+}

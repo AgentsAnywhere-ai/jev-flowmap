@@ -35,15 +35,15 @@ In scope:
 Out of scope for this version, with reasons:
 
 - **Dynamic simulation.** Booting the app and choosing actions from observation is
-  the P2 plan in `docs/jev-qa-loop.md` in the Jevify repository, which gates it behind an
+  a separately designed plan in a companion project, which gates it behind an
   evidence contract, a shadow evaluator and budget caps. Not reopened here.
 - **The Score primitive.** The reference guide measured Score ranking sensibly but
   scoring genuinely good items 5 to 7 out of 10, so it is usable for ranking and
   not as a pass mark. This version has nothing to rank, so Score is not used.
-- **Hosted Jevify integration.** No quotes, credits, ledger, worker routes or
-  migrations. The skill runs against a local checkout with the caller's own
-  `TYPESAFE_API_KEY`. Making this a billable Jevify capability is a separate design.
-  This plugin and Jevify share ideas and a provider, not code.
+- **Any hosted or billable service integration.** No quotes, credits, ledger,
+  server routes or migrations. The skill runs against a local checkout with the
+  caller's own `TYPESAFE_API_KEY`. Turning this into a hosted capability is a
+  separate design.
 - **Persona simulation, Mermaid rendering and a docs gap report.** All build on
   `flows.json` and can be added later without changing the judgments.
 
@@ -108,23 +108,23 @@ in an agent setting and a weaker claim than the cookbook's.
 ## 5. Packaging and files
 
 This ships as a standalone public Claude Code plugin, `jev-flowmap`, in its own
-repository at `github.com/AgentsAnywhere-ai/jev-flowmap`, referenced as a remote entry in
-the Agents Anywhere marketplace. It is not a package inside Jevify. Jevify keeps no
-copy of the skill or of this design document once the repository exists, because two
-copies is the drift that `RELEASING.md` in the marketplace was written to prevent.
+repository at `github.com/AgentsAnywhere-ai/jev-flowmap`. The repository is both the
+plugin and its own marketplace, so it installs directly with no intermediary. It is
+not a package inside any other project, and no other project keeps a copy of the
+skill or of this document, because a second copy is how the two drift apart.
 
 ```
 jev-flowmap/                         public, MIT, no runtime dependencies
   .claude-plugin/plugin.json         name, version, description, author, keywords
   README.md                          what it does, install, honest limits
-  KNOWN-GAPS.md                      matches the marketplace convention
+  KNOWN-GAPS.md                      open gaps, dated, honest
   LICENSE
   docs/design.md                     this document
   skills/user-flows/
     SKILL.md                         procedure, boundaries, honesty rules
     scripts/flowmap.mjs              zero dependencies, Node 22+
     references/questions.json        versioned question set and criteria wording
-  evals/flows/labeled.jsonl          50 hand-labeled files from the Jevify repository
+  evals/flows/labeled.jsonl          50 hand-labeled files from a real repository
   tests/flowmap.test.js              node:test, pure functions, no network
 ```
 
@@ -136,41 +136,22 @@ changed question invalidates comparison against an older run.
 never a relative or absolute path, because the plugin resolves to a different
 location per install.
 
-### 5.1 Marketplace entry
+### 5.1 Distribution
 
-Added to `.claude-plugin/marketplace.json` in `agents-anywhere-marketplace`:
+The repository carries its own `.claude-plugin/marketplace.json` with `source: "./"`,
+so it is both the plugin and the marketplace that serves it. A reader installs it by
+adding this repository directly; nothing else has to list it first.
 
-```jsonc
-{
-  "name": "jev-flowmap",
-  "source": { "source": "url", "url": "https://github.com/AgentsAnywhere-ai/jev-flowmap.git", "ref": "main" },
-  "description": "<copied verbatim from plugin.json, not paraphrased>",
-  "version": "0.1.0",
-  "category": "engineering",
-  "tier": "internal",
-  "keywords": ["user-flows", "documentation", "code-comprehension", "jev", "typesafe", "static-analysis"]
-}
-```
-
-`category: "engineering"` and this plugin's non-business subject matter are both new
-to that marketplace, whose four existing plugins are business operating systems under
-`sales`, `marketing` and `operations`. The marketplace `metadata.description` says
-"operating systems for Agents Anywhere and its qualified distribution partners" and
-will need a sentence that admits engineering tooling.
-
-`ref: "main"` is deliberate and temporary. While the team is testing, an unpinned ref
-means they pull fixes without a marketplace release. At the first real release the
-entry gains a `sha` pin, matching how the official marketplace pins its remote
-entries, and `RELEASING.md` gains two rows: one for repinning the `sha`, and one
-requiring that `flowmap eval` has been run and its measured thresholds are the ones
-shipped in `questions.json` and the policy table.
+Installs track `main` rather than a pinned commit while the thresholds in section 7
+are still defaults. Pinning a release implies the release means something, and it
+will not until section 11 has run. The release that pins a commit is the same release
+that ships measured thresholds, and neither should happen without the other.
 
 ### 5.2 Testing dependency
 
-The test suite uses `node:test` and `node:assert` from Node 22, not vitest. Jevify
-can afford vitest because it already carries a toolchain. A plugin that people
-install should have no `node_modules` at all, and the units under test in section 14
-are pure functions that need no test framework beyond what Node ships.
+The test suite uses `node:test` and `node:assert` from Node 22, not vitest. A plugin
+that people install should have no `node_modules` at all, and the units under test in
+section 14 are pure functions that need no test framework beyond what Node ships.
 
 ## 6. Question set
 
@@ -209,7 +190,7 @@ measures how often. Questions reference nested state by backticked path.
 ### 6.2 Surface, one Choice per surviving entry point
 
 Options are separated by **who calls it and under what contract**, never by
-transport. Jevify's own MCP endpoint is HTTP, so a transport-based split would put
+transport. An MCP endpoint is commonly served over HTTP, so a transport-based split would put
 probability mass on two options at once. The reference guide's `16GB` versus `16 GB`
 vote-split is the failure mode being avoided here.
 
@@ -368,12 +349,11 @@ The limitations block is fixed text, always present:
 The reference guide's discipline, applied to this workload. This is not optional
 polish; the thresholds in section 7 are invented until this runs.
 
-1. **Labeled set.** `evals/flows/labeled.jsonl`, 50 files from the Jevify
-   repository, each hand-labeled user-reachable or not. Jevify is the right first
-   corpus because the answers are already known there, and because it exercises three
-   surfaces at once: a browser workbench, a REST API and an MCP endpoint. The corpus
-   stores paths and labels, not Jevify source, so the public repository carries no
-   private code.
+1. **Labeled set.** `evals/flows/labeled.jsonl`, 50 files from a real repository,
+   each hand-labeled user-reachable or not. Pick a corpus whose answers you already
+   know and that exercises several surfaces at once, so one label set covers a browser
+   UI, an HTTP API and an agent tool. The corpus stores paths and labels, never source,
+   so a public repository carries no private code.
 2. **Threshold report.** `flowmap eval` reports accuracy, every miss with its
    probability, and the widest gap separating hits from misses as the suggested
    threshold. The guide's diagnostic is the valuable part: if the misses come back at
@@ -439,7 +419,7 @@ One integration test runs the full pipeline against recorded provider responses 
 fixtures, asserting a byte-stable `flows.json` and `FLOWS.md`. No live call in CI.
 
 The whole suite runs with `node --test`. A GitHub Actions workflow runs it on push,
-since the repository is public and the marketplace points at `main`.
+since the repository is public and installs track `main`.
 
 ## 15. CLI
 
@@ -465,11 +445,8 @@ inspectable, so a person can read what was screened before paying for verificati
 
 ## 17. References
 
-- `docs/jev-qa-loop.md` in the Jevify repository, the dynamic counterpart and its gates
 - `src/worker/harness.ts` for the injection guard, state budget and policy framing
 - `examples/support-routing-mvp/support.mjs` for the answer validation shape
-- `agents-anywhere-marketplace/RELEASING.md` for the release checklist this plugin
-  joins, and `agents-anywhere-operations-os/` for the plugin directory layout
 - [TypeSafe API reference](https://docs.typesafe.ai/api) and
   [primitives](https://docs.typesafe.ai/primitives)
 - Nate B. Jones, ["Find the Jev-shaped problems in your software"](https://unlock-ai.natebjones.com/guides/jev-shaped-problems),

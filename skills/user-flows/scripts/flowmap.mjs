@@ -141,7 +141,7 @@ export function chunkFiles(entries, { stateBudgetBytes, batchSize }) {
 
 const finiteProbability = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 
-/** Mirrors the validation in Jevify's support-routing example. Never coerce. */
+/** A returned answer is checked against the question that asked it. Never coerce. */
 export function validateAnswer(answer, question) {
   if (!answer || typeof answer !== 'object') return { ok: false, reason: 'missing' };
   if (answer.type !== question.type) return { ok: false, reason: 'type_mismatch' };

@@ -2,9 +2,20 @@
   "name": "jev-flowmap",
   "version": "0.1.1",
   "description": "Map the user flows of a repository from its source. Jev screens which files carry user-reachable behavior and verifies each claimed step against cited code; the plugin emits a flows.json graph and a rendered FLOWS.md with per-step evidence, coverage accounting, guard and dead-end detection. Static only: it never runs, builds or opens the project.",
-  "author": { "name": "Agents Anywhere (BRNDSH)", "url": "https://agentsanywhere.ai" },
+  "author": {
+    "name": "Agents Anywhere",
+    "url": "https://agentsanywhere.ai"
+  },
   "homepage": "https://github.com/AgentsAnywhere-ai/jev-flowmap",
   "repository": "https://github.com/AgentsAnywhere-ai/jev-flowmap",
   "license": "MIT",
-  "keywords": ["user-flows", "documentation", "code-comprehension", "jev", "typesafe", "static-analysis", "agents-anywhere"]
+  "keywords": [
+    "user-flows",
+    "documentation",
+    "code-comprehension",
+    "jev",
+    "typesafe",
+    "static-analysis",
+    "agents-anywhere"
+  ]
 }

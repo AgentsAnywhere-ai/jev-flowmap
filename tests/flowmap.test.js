@@ -9,7 +9,7 @@ import {
   labelTriage, labelStep, checkCoverage, estimateCostUsd, assemble, render,
   triage, loadQuestions, policyVersion, compileIgnore, ignored,
 } from '../skills/user-flows/scripts/flowmap.mjs';
-import { bestThreshold, summarize } from '../skills/user-flows/scripts/eval.mjs';
+import { bestThreshold, summarize, bands, twoThresholds } from '../skills/user-flows/scripts/eval.mjs';
 
 const questions = await loadQuestions();
 const policy = questions.policy;
@@ -418,6 +418,50 @@ describe('eval', () => {
       { path: 'c', expected: false, reach: 0.1 },
     ];
     assert.match(summarize(near, 0.6).diagnosis, /threshold change is the right lever/);
+  });
+
+  test('bands report accuracy per band, not one overall number', () => {
+    const mixed = [
+      { path: 'a', expected: true, reach: 0.95 }, { path: 'b', expected: true, reach: 0.9 },
+      { path: 'c', expected: false, reach: 0.05 }, { path: 'd', expected: false, reach: 0.1 },
+      { path: 'e', expected: true, reach: 0.45 }, { path: 'f', expected: false, reach: 0.55 },
+    ];
+    const b = bands(mixed);
+    assert.equal(b.length, 5);
+    assert.equal(b.find((x) => x.band === '0.8-1.0').accuracy, 1, 'confident positives are right');
+    assert.equal(b.find((x) => x.band === '0.0-0.2').accuracy, 1, 'confident negatives are right');
+    assert.equal(b.find((x) => x.band === '0.4-0.6').accuracy, 0, 'the middle band is a coin flip and says so');
+    assert.equal(b.reduce((n, x) => n + x.count, 0), 6, 'every scored item lands in exactly one band');
+    assert.ok(Math.abs(b.reduce((n, x) => n + x.share, 0) - 1) < 0.01);
+  });
+
+  test('a cleanly separable signal needs no review pile', () => {
+    const g = twoThresholds([
+      { path: 'a', expected: true, reach: 0.95 }, { path: 'b', expected: true, reach: 0.92 },
+      { path: 'c', expected: false, reach: 0.03 }, { path: 'd', expected: false, reach: 0.06 },
+    ], 0.95);
+    assert.equal(g.reviewShare, 0);
+    assert.equal(g.unattendedShare, 1);
+    assert.ok(g.exclude === g.include, 'one threshold is enough when the gap is clean');
+  });
+
+  test('an overlapping middle is sent to review rather than guessed at', () => {
+    const g = twoThresholds([
+      { path: 'a', expected: true, reach: 0.95 }, { path: 'b', expected: true, reach: 0.9 },
+      { path: 'c', expected: false, reach: 0.05 }, { path: 'd', expected: false, reach: 0.08 },
+      { path: 'e', expected: true, reach: 0.5 }, { path: 'f', expected: false, reach: 0.52 },
+    ], 0.95);
+    assert.ok(g.reviewShare > 0, 'the overlapping pair cannot run unattended');
+    assert.ok(g.exclude <= 0.5 && g.include > 0.52, 'the gates sit outside the overlap');
+  });
+
+  test('says the question is wrong when nothing is trustworthy at the target', () => {
+    const g = twoThresholds([
+      { path: 'a', expected: true, reach: 0.5 }, { path: 'b', expected: false, reach: 0.5 },
+      { path: 'c', expected: true, reach: 0.5 }, { path: 'd', expected: false, reach: 0.5 },
+    ], 0.95);
+    assert.equal(g.reviewShare, 1);
+    assert.match(g.note, /Fix the question or the criteria/);
   });
 
   test('counts unevaluated files separately from wrong ones', () => {

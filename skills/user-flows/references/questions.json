@@ -78,7 +78,7 @@
     "terminal_failure": { "flag": 0.6 },
     "destructive": { "flag": 0.6 },
     "escalationBudget": 25,
-    "batchSize": 10,
+    "batchSize": 1,
     "concurrency": 25,
     "stateBudgetBytes": 24000,
     "headBytes": 600,

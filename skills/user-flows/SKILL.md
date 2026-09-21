@@ -143,10 +143,26 @@ Corpus lines are `{"path": "src/worker/app.ts", "userReachable": true}`. The rep
 gives accuracy at the shipped threshold, the best separating threshold, the naive
 heuristic's accuracy for comparison, and every miss with its probability.
 
+**Read the bands before the overall accuracy.** One number hides the only shippable
+fact: which share of the traffic the model is sure about, and how right it is when it
+is sure. The report prints accuracy per probability band, and a two-threshold gate,
+because one threshold forces every item into a decision while two leave the uncertain
+middle for a person.
+
 Read the `diagnosis` field. If most misses come back confident, the question wording
 or the criteria are wrong and moving the threshold will not help. Fix
 `references/questions.json` and re-run. Changing that file changes `policyVersion`,
 which correctly invalidates comparison against older runs.
+
+Two rules that cost other people a week:
+
+- **A threshold measured on a Noul does not transfer to a Choice.** A Choice asks
+  which option wins and is relative; a Noul asks whether one statement is true and is
+  absolute. Different distribution, separate table.
+- **Move the thresholds and the model pin in the same commit.** The pin is
+  `jev-1.13.0`, never a floating alias. A version bump is a re-measurement, not a
+  dependency update: nothing errors, and a gate tuned on old weights quietly starts
+  opening in a different place.
 
 The `--batch` sweep matters: triage puts many file excerpts in one state, and
 irrelevant context is a documented Jev weakness. If batch 1 is much more accurate

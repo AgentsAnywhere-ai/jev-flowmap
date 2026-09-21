@@ -13,14 +13,22 @@ probability as an accuracy, and `FLOWS.md` says so in its limitations block.
 
 Closing it needs `evals/flows/labeled.jsonl`: roughly 50 files from a real
 repository, each hand-labeled user-reachable or not. See `evals/flows/README.md`.
-Jevify is the intended first corpus because it exercises three surfaces at once.
+Pick a corpus that exercises several surfaces at once, so one label set covers a
+browser UI, an HTTP API and an agent tool rather than only one of them.
 
 ### The batch-size accuracy tradeoff is unmeasured (opened 2026-09-21)
 
-Triage puts up to ten file excerpts in one state to save requests. Irrelevant
-context is a documented Jev weakness, so batching may cost accuracy. `flowmap eval
---batch 1,10,30` exists to measure this and has not been run. The default of 10 is
-a guess.
+Triage can put several file excerpts in one state to save requests, and irrelevant
+context is a documented weakness of this model class. A practitioner report measured
+a router's accuracy going from 84% to 91% purely by cutting its state from 9,000
+tokens to 600, on identical questions.
+
+**The default is therefore 1 file per request**, which is the accuracy-first choice
+and costs almost nothing extra: the same excerpt bytes are sent either way, only the
+per-request overhead is repeated, and a 327-file run stays comfortably inside the
+rate limit. `flowmap eval --batch 1,10,30` measures what larger batches actually
+cost you. Until someone runs it, raising the batch is trading unmeasured accuracy
+for an unmeasured saving.
 
 ### Surface classification is written but not wired (opened 2026-09-21)
 
@@ -57,6 +65,14 @@ is guesswork we have not earned.
 `!pattern` lines are recorded as unsupported and the files they re-include stay
 skipped. Erring toward skipping is deliberate: a half-applied negation would read
 a file the project asked us not to read. The run names every rule it ignored.
+
+### Only triage has an eval, and only the Noul kind (opened 2026-09-21)
+
+`flowmap eval` measures the triage question. The five step-verification questions
+and the surface Choice have no corpus and no measured thresholds at all. Worse, a
+threshold measured on a yes-or-no question does not transfer to a multiple-choice
+one: a Choice asks which option wins and is relative, a Noul asks whether one
+statement is true and is absolute. Different distribution, separate table needed.
 
 ## Closed
 
