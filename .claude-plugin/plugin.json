@@ -1,6 +1,6 @@
 {
   "name": "jev-flowmap",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Map the user flows of a repository from its source. Jev screens which files carry user-reachable behavior and verifies each claimed step against cited code; the plugin emits a flows.json graph and a rendered FLOWS.md with per-step evidence, coverage accounting, guard and dead-end detection. Static only: it never runs, builds or opens the project.",
   "author": {
     "name": "Agents Anywhere",

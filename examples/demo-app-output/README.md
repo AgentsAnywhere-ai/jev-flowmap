@@ -3,6 +3,11 @@
 These are **real artifacts from a real run**, not hand-written illustrations. The
 whole run was 16 requests, about 1.3 seconds of provider time, and **$0.0010**.
 
+One caveat on reproducing it: this triage was captured when the default batch size
+was 10 files per request. The default is now 1, on the evidence that smaller state
+reads more accurately, so your numbers will differ slightly from the ones in
+`triage.json`. The separation holds either way.
+
 Reproduce it yourself:
 
 ```sh
